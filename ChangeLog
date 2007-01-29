@@ -1,0 +1,23 @@
+------------------- pcapsipdump 0.1.2 ------------------------------------------
+Mon Jan 29 18:08:02 MSK 2007
+        * add basic command-line options:
+	   [-fp] [-i <interface>] [-r <file>] [-d <working directory>]
+    	   -f     Do not fork or detach from controlling terminal;
+           -p     Do not put the interface into promiscuous mode.
+        * all following contributed by John Van Ostrand:
+        * added an optional fork() call to the pcapsipdump code so that it runs
+	   as a daemon
+	* added an install target to the Makefile
+	* added a redhat directory with Red Hat./CentOS/Fedora init script,
+	   sysconfig script, RPM spec file and README.txt
+
+------------------- pcapsipdump 0.1.1 ------------------------------------------
+Sun Aug 13 15:08:44 MSD 2006
+        * minor code cleanup in order to (hopefely) improve portability
+	* added usage printout
+	* changed storage place from /home/pcapsipdump to /var/spool/pcapsipdump
+	* added copyright clauses to each file and LICENCE file
+
+------------------- pcapsipdump 0.1 --------------------------------------------
+Wed Jul 27 13:05:11 MSD 2006
+	* first publuc release
