@@ -8,7 +8,7 @@ Mon Jan 29 18:08:02 MSK 2007
         * added an optional fork() call to the pcapsipdump code so that it runs
 	   as a daemon
 	* added an install target to the Makefile
-	* added a redhat directory with Red Hat./CentOS/Fedora init script,
+	* added a redhat directory with Red Hat/CentOS/Fedora init script,
 	   sysconfig script, RPM spec file and README.txt
 
 ------------------- pcapsipdump 0.1.1 ------------------------------------------
