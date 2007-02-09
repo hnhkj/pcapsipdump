@@ -1,10 +1,10 @@
 all: pcapsipdump
 
 pcapsipdump: pcapsipdump.cpp calltable.cpp calltable.h
-	c++ -s -Wall -O2 -fomit-frame-pointer pcapsipdump.cpp calltable.cpp -o pcapsipdump -lpcap
+	$(CC) $(CPPFLAGS) $(LDFLAGS) pcapsipdump.cpp calltable.cpp -o pcapsipdump -lpcap -lstdc++
 
 pcapsipdump-debug: pcapsipdump.cpp calltable.cpp calltable.h
-	c++ -ggdb -Wall pcapsipdump.cpp calltable.cpp -o pcapsipdump-debug -lpcap
+	$(CC) $(CPPFLAGS) $(LDFLAGS) -ggdb pcapsipdump.cpp calltable.cpp -o pcapsipdump-debug -lpcap -lstdc++
 
 clean:
 	rm -f pcapsipdump
