@@ -172,9 +172,7 @@ int main(int argc, char *argv[])
 
 	    if (header.ts.tv_sec-last_cleanup>15){
 		if (last_cleanup>=0){
-printf("Trying to clean-up...\n");
 		    ct->do_cleanup(header.ts.tv_sec);
-printf("Done clean-up...\n");
 		}
 		last_cleanup=header.ts.tv_sec;
 	    }
