@@ -10,4 +10,8 @@ to "tcpdump -w" (format is exactly the same), but one
 file per sip session (even if there is thousands of
 concurrect SIP sessions).
 
+pcapsipdump can also be used to split "bulk" pcap file
+into bunch of individual files (one per call):
+pcapsipdump -r <bulkfile> -d <dir-for-bunch-of-files>
+
 for Red Hat/CentOS/Fedora rpm instructions see redhat/ dir

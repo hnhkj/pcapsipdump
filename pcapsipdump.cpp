@@ -172,7 +172,9 @@ int main(int argc, char *argv[])
 
 	    if (header.ts.tv_sec-last_cleanup>15){
 		if (last_cleanup>=0){
+printf("Trying to clean-up...\n");
 		    ct->do_cleanup(header.ts.tv_sec);
+printf("Done clean-up...\n");
 		}
 		last_cleanup=header.ts.tv_sec;
 	    }
@@ -200,7 +202,11 @@ int main(int argc, char *argv[])
 			    //figure out method
 			    memcpy(sip_method,data,sizeof(sip_method)-1);
 			    sip_method[sizeof(sip_method)-1]=' ';
-			    *strchr(sip_method,' ')='\0';
+			    if (strchr(sip_method,' ')!=NULL){
+				*strchr(sip_method,' ')='\0';
+			    }else{
+				sip_method[0]='\0';
+			    }
 			    if (strcmp(sip_method,"INVITE")==0){
 				struct tm *t;
 				char caller[256];

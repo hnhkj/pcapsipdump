@@ -1,3 +1,10 @@
+Fri Mar  9 16:41:04 MSK 2007
+	* Fix bug, leading to segfault on malformed SIP packets
+
+Fri Feb  9 14:50:56 MSK 2007
+        * use "$(CC) $(CPPFLAGS) $(LDFLAGS)" instead of hardcoded "c++ -Wall s"
+           in order to simplify cross-compiling
+
 ------------------- pcapsipdump 0.1.2 ------------------------------------------
 Mon Jan 29 18:08:02 MSK 2007
         * add basic command-line options:
