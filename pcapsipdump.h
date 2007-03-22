@@ -26,7 +26,7 @@
     This would be appreciated, but not required.
 */
 
-#define PCAPSIPDUMP_VERSION "0.1.2"
+#define PCAPSIPDUMP_VERSION "0.1.3"
 
 struct iphdr {
 #if defined(__LITTLE_ENDIAN)

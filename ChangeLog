@@ -1,5 +1,9 @@
+------------------- pcapsipdump 0.1.3 ------------------------------------------
+Thu Mar 22 18:35:16 MSK 2007
+        * Fix compiler waring about variable, that might be used uninitialized 
+
 Fri Mar  9 16:41:04 MSK 2007
-	* Fix bug, leading to segfault on malformed SIP packets
+        * Fix bug, leading to segfault on malformed SIP packets
 
 Fri Feb  9 14:50:56 MSK 2007
         * use "$(CC) $(CPPFLAGS) $(LDFLAGS)" instead of hardcoded "c++ -Wall s"

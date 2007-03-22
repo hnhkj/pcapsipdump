@@ -1,14 +1,14 @@
 Summary: PCAP SIP Dump tool
 Name: pcapsipdump
 Distribution: RedHat
-Version: 0.1.2
+Version: 0.1.3
 Release: 1
 License: GPL v2
 Group: Utilities/System
 Vendor: nording
 Packager: John Van Ostrand <john@netdirect.ca>
 BuildRoot: /var/tmp/%{name}-%{version}
-Source: pcapsipdump-0.1.2.tar.gz
+Source: %{name}-%{version}.tar.gz
 
 %description
 pcapsipdump is a tool for dumping SIP sessions (+RTP
