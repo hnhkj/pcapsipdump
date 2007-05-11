@@ -1,7 +1,16 @@
-------------------- pcapsipdump 0.1.3 ------------------------------------------
+------------------- pcapsipdump 0.1.4 ------------------------------------------
+Fri May 11 22:31:49 MSD 2007
+        * Avoid file trimming - add 'packet-buffered' (-U) option,
+          add SIGTERM graceful handler
+        * Fix 64-bit platform pointer issues (use char* in arithmetics instead
+          of uint32_t)
+        * Fix sip header parsing (RFC 3261 allows no-space-after-semicolon
+          syntax, however it is not show in examples and, thus, rarely used)
+
 Thu Apr  2 11:51:33 MSD 2007
         * Include "verbosity level" command-line option
 
+------------------- pcapsipdump 0.1.3 ------------------------------------------
 Thu Mar 22 18:35:16 MSK 2007
         * Fix compiler waring about variable, that might be used uninitialized 
 
