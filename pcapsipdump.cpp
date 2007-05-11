@@ -55,6 +55,13 @@ void sigint_handler(int param)
     exit(1);
 }
 
+void sigterm_handler(int param)
+{
+    printf("SIGTERM received, terminating\n");
+    ct->do_cleanup(0);
+    exit(1);
+}
+
 int main(int argc, char *argv[])
 {
 
@@ -72,6 +79,7 @@ int main(int argc, char *argv[])
     unsigned long last_cleanup=0;
     int opt_fork=1;
     int opt_promisc=1;
+    int opt_packetbuffered=0;
     int verbosity=0;
 
     ifname=NULL;
@@ -80,7 +88,7 @@ int main(int argc, char *argv[])
     while(1) {
         char c;
 
-        c = getopt_long (argc, argv, "i:r:d:fpv:",
+        c = getopt_long (argc, argv, "i:r:d:v:fpU",
                         NULL, NULL);
         if (c == -1)
             break;
@@ -104,6 +112,9 @@ int main(int argc, char *argv[])
             case 'p':
                 opt_promisc=0;
                 break;
+            case 'U':
+		opt_packetbuffered=1;
+                break;
         }
     }
     
@@ -113,18 +124,21 @@ int main(int argc, char *argv[])
     }
 
     if ((fname==NULL)&&(ifname==NULL)){
-	printf("pcapsipdump version %s\n"
-	       "Usage: pcapsipdump [-fp] [-i <interface>] [-r <file>] [-d <working directory>] [-v level]\n"
-	       " -f     Do not fork or detach from controlling terminal.\n"
-	       " -p     Do not put the interface into promiscuous mode.\n"
-	       " -p     Do not put the interface into promiscuous mode.\n"
-	       " -v     Set verbosity level (higher is more verbose).\n"
+	printf( "pcapsipdump version %s\n"
+		"Usage: pcapsipdump [-fpU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level]\n"
+		" -f   Do not fork or detach from controlling terminal.\n"
+		" -p   Do not put the interface into promiscuous mode.\n"
+		" -U   Make  output saved via the -w option ‘‘packet-buffered’’; i.e.,\n"
+		"        as each packet is saved, it will be written to the output file,\n"
+		"        rather than being written only when the output buffer fills.\n"
+		" -v   Set verbosity level (higher is more verbose).\n"
 		,PCAPSIPDUMP_VERSION);
 	return 1;
     }
 
     ct = new calltable;
     signal(SIGINT,sigint_handler);
+    signal(SIGTERM,sigterm_handler);
 
     if (ifname){
 	printf("Capturing on interface: %s\n", ifname);
@@ -195,11 +209,13 @@ int main(int argc, char *argv[])
 		    if (ct->table[idx].f_pcap!=NULL){
 			ct->table[idx].last_packet_time=header.ts.tv_sec;
 			pcap_dump((u_char *)ct->table[idx].f_pcap,&header,packet);
+			if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
 		    }
 		}else if ((idx=ct->find_ip_port(header_ip->saddr,htons(header_udp->source)))>=0){
 		    if (ct->table[idx].f_pcap!=NULL){
 			ct->table[idx].last_packet_time=header.ts.tv_sec;
 			pcap_dump((u_char *)ct->table[idx].f_pcap,&header,packet);
+			if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
 		    }
 		}else if (htons(header_udp->source)==5060||
 		    htons(header_udp->dest)==5060){
@@ -272,6 +288,7 @@ int main(int argc, char *argv[])
 
 		    if (ct->table[idx].f_pcap!=NULL){
 			pcap_dump((u_char *)ct->table[idx].f_pcap,&header,packet);
+			if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
 		    }
 		}else{
 		    if (verbosity>=3){
