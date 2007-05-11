@@ -8,7 +8,7 @@ pcapsipdump is a tool for dumping SIP sessions (+RTP
 traffic, if available) to disk in a fashion similar
 to "tcpdump -w" (format is exactly the same), but one
 file per sip session (even if there is thousands of
-concurrect SIP sessions).
+concurrent SIP sessions).
 
 pcapsipdump can also be used to split "bulk" pcap file
 into bunch of individual files (one per call):

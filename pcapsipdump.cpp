@@ -72,13 +72,15 @@ int main(int argc, char *argv[])
     unsigned long last_cleanup=0;
     int opt_fork=1;
     int opt_promisc=1;
+    int verbosity=0;
 
     ifname=NULL;
     fname=NULL;
     opt_chdir="/var/spool/pcapsipdump";
     while(1) {
         char c;
-        c = getopt_long (argc, argv, "i:r:d:fp",
+
+        c = getopt_long (argc, argv, "i:r:d:fpv:",
                         NULL, NULL);
         if (c == -1)
             break;
@@ -87,6 +89,9 @@ int main(int argc, char *argv[])
             case 'i':
                 ifname=optarg;
                 break;
+	    case 'v':
+		verbosity=atoi(optarg);
+		break;
             case 'r':
                 fname=optarg;
                 break;
@@ -109,9 +114,12 @@ int main(int argc, char *argv[])
 
     if ((fname==NULL)&&(ifname==NULL)){
 	printf("pcapsipdump version %s\n"
-	       "Usage: pcapsipdump [-fp] [-i <interface>] [-r <file>] [-d <working directory>]\n"
+	       "Usage: pcapsipdump [-fp] [-i <interface>] [-r <file>] [-d <working directory>] [-v level]\n"
 	       " -f     Do not fork or detach from controlling terminal.\n"
-	       " -p     Do not put the interface into promiscuous mode.\n",PCAPSIPDUMP_VERSION);
+	       " -p     Do not put the interface into promiscuous mode.\n"
+	       " -p     Do not put the interface into promiscuous mode.\n"
+	       " -v     Set verbosity level (higher is more verbose).\n"
+		,PCAPSIPDUMP_VERSION);
 	return 1;
     }
 
@@ -177,9 +185,9 @@ int main(int argc, char *argv[])
 		last_cleanup=header.ts.tv_sec;
 	    }
 
-	    header_ip=(iphdr *)((uint32_t)packet+sizeof(struct ether_header));
+	    header_ip=(iphdr *)((char*)packet+sizeof(struct ether_header));
 	    if (header_ip->protocol==17){//UPPROTO_UDP=17
-		header_udp=(udphdr *)((uint32_t)header_ip+sizeof(*header_ip));
+		header_udp=(udphdr *)((char*)header_ip+sizeof(*header_ip));
 		data=(char *)header_udp+sizeof(*header_udp);
 		datalen=header.len-((unsigned long)data-(unsigned long)packet);
 
@@ -188,10 +196,15 @@ int main(int argc, char *argv[])
 			ct->table[idx].last_packet_time=header.ts.tv_sec;
 			pcap_dump((u_char *)ct->table[idx].f_pcap,&header,packet);
 		    }
+		}else if ((idx=ct->find_ip_port(header_ip->saddr,htons(header_udp->source)))>=0){
+		    if (ct->table[idx].f_pcap!=NULL){
+			ct->table[idx].last_packet_time=header.ts.tv_sec;
+			pcap_dump((u_char *)ct->table[idx].f_pcap,&header,packet);
+		    }
 		}else if (htons(header_udp->source)==5060||
 		    htons(header_udp->dest)==5060){
 		    data[datalen]=0;
-		    s=gettag(data,datalen,"Call-ID: ",&l);
+		    s=gettag(data,datalen,"Call-ID:",&l);
 		    if ((idx=ct->find_by_call_id(s,l))<0){
 			if ((idx=ct->add(s,l,header.ts.tv_sec))<0){
 			    printf("Too many simultanious calls. runt out of call table space!\n");
@@ -204,14 +217,17 @@ int main(int argc, char *argv[])
 				*strchr(sip_method,' ')='\0';
 			    }else{
 				sip_method[0]='\0';
+				if (verbosity>=2){
+				    printf("Empty SIP method!\n");
+				}
 			    }
-			    if (strcmp(sip_method,"INVITE")==0){
+			    if ((strcmp(sip_method,"INVITE")==0)||(strcmp(sip_method,"OPTIONS")==0)||(strcmp(sip_method,"REGISTER")==0)){
 				struct tm *t;
 				char caller[256];
 				char called[256];
 				t=localtime(&header.ts.tv_sec);
-				get_sip_peername(data,datalen,"From: ",caller,sizeof(caller));
-				get_sip_peername(data,datalen,"To: ",called,sizeof(called));
+				get_sip_peername(data,datalen,"From:",caller,sizeof(caller));
+				get_sip_peername(data,datalen,"To:",called,sizeof(called));
 				sprintf(str2,"%04d%02d%02d",
 					t->tm_year+1900,t->tm_mon+1,t->tm_mday);
 				mkdir(str2,0700);
@@ -232,27 +248,44 @@ int main(int argc, char *argv[])
 				strcat(str2,".pcap");
 				ct->table[idx].f_pcap=pcap_dump_open(handle,str2);
 			    }else{
+				if (verbosity>=2){
+				    printf("Unknown SIP method:'%s'!\n",sip_method);
+				}
 				ct->table[idx].f=NULL;
 				ct->table[idx].f_pcap=NULL;
 			    }
 			}
 		    }
 
-		    s=gettag(data,datalen,"Content-Type: ",&l);
-		    if(l>0 && memcmp(s,"application/sdp",l)==0 && strstr(data,"\r\n\r\n")!=NULL){
+		    s=gettag(data,datalen,"Content-Type:",&l);
+		    if(l>0 && strncasecmp(s,"application/sdp",l)==0 && strstr(data,"\r\n\r\n")!=NULL){
 			in_addr_t tmp_addr;
 			unsigned short tmp_port;
 			if (!get_ip_port_from_sdp(strstr(data,"\r\n\r\n")+1,&tmp_addr,&tmp_port)){
 			    ct->add_ip_port(idx,tmp_addr,tmp_port);
+			}else{
+			    if (verbosity>=2){
+				printf("Can't get ip/port from SDP:\n%s\n\n",strstr(data,"\r\n\r\n")+1);
+			    }
 			}
-		    }else{
 		    }
 
 		    if (ct->table[idx].f_pcap!=NULL){
 			pcap_dump((u_char *)ct->table[idx].f_pcap,&header,packet);
 		    }
+		}else{
+		    if (verbosity>=3){
+			char st1[16];
+			char st2[16];
+			struct in_addr in;
+		    
+			in.s_addr=header_ip->saddr;
+			strcpy(st1,inet_ntoa(in));
+			in.s_addr=header_ip->daddr;
+			strcpy(st2,inet_ntoa(in));
+			printf ("Skipping udp packet %s:%d->%s:%d\n",st1,htons(header_udp->source),st2,htons(header_udp->dest));
+		    }
 		}
-
 	    }
 	}
     }
@@ -278,7 +311,7 @@ int get_sip_peername(char *data, int data_len, char *tag, char *peername, int pe
     memset(peername+(r2-r),0,1);
     return 0;
 fail_exit:
-    strcpy(peername,"???");
+    strcpy(peername,"empty");
     return 1;
 }
 
@@ -304,19 +337,28 @@ int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port){
 
 char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long *gettaglen){
     unsigned long register r,l,tl;
+    char *rc;
 
     tl=strlen(tag);
     r=(unsigned long)memmem(ptr,len,tag,tl);
     if(r==0){
-	*gettaglen=0;	
+	l=0;
     }else{
 	r+=tl;
 	l=(unsigned long)memmem((void *)r,len-(r-(unsigned long)ptr),"\r\n",2);
 	if (l>0){
-	    *gettaglen=l-r;
+	    l-=r;
 	}else{
-	    *gettaglen=0;
+	    l=0;
 	}
     }
-    return (char*)r;
+    rc=(char*)r;
+    if (rc){
+	while (rc[0]==' '){
+	    rc++;
+	    l--;
+	}
+    }
+    *gettaglen=l;
+    return rc;
 }
