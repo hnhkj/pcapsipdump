@@ -128,9 +128,8 @@ int main(int argc, char *argv[])
 		"Usage: pcapsipdump [-fpU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
-		" -U   Make  output saved via the -w option ‘‘packet-buffered’’; i.e.,\n"
-		"        as each packet is saved, it will be written to the output file,\n"
-		"        rather than being written only when the output buffer fills.\n"
+		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
+		"      but you can use partitially written file anytime, it will be consistent.\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
 		,PCAPSIPDUMP_VERSION);
 	return 1;
@@ -150,7 +149,7 @@ int main(int argc, char *argv[])
 	}
 	handle = pcap_open_live(ifname, 1600, opt_promisc, 1000, errbuf);
 	if (handle == NULL) {
-	    fprintf(stderr, "Couldn't open inteface '%s': %s\n", ifname, errbuf);
+	    fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, errbuf);
 	    return(2);
 	}
     }else{
@@ -223,7 +222,7 @@ int main(int argc, char *argv[])
 		    s=gettag(data,datalen,"Call-ID:",&l);
 		    if ((idx=ct->find_by_call_id(s,l))<0){
 			if ((idx=ct->add(s,l,header.ts.tv_sec))<0){
-			    printf("Too many simultanious calls. runt out of call table space!\n");
+			    printf("Too many simultaneous calls. Ran out of call table space!\n");
 			}else{
 			    char sip_method[256];
 			    //figure out method
