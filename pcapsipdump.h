@@ -57,3 +57,14 @@ struct udphdr {
 	uint16_t	len;
 	uint16_t	check;
 };
+
+#ifndef ETH_ALEN
+#define ETH_ALEN 6
+#endif
+
+struct ether_header
+{
+  uint8_t  ether_dhost[ETH_ALEN];	/* destination eth addr	*/
+  uint8_t  ether_shost[ETH_ALEN];	/* source ether addr	*/
+  uint16_t ether_type;		        /* packet type ID field	*/
+} __attribute__ ((__packed__));

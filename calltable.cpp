@@ -42,7 +42,7 @@ int calltable::add(
 	unsigned long call_id_len,
 	time_t time)
 {
-    unsigned long idx=-1,i,found_empty=0;
+    uint32_t idx=(uint32_t)-1,i,found_empty=0;
     for (i=0;i<table_size;i++){
 	if(table[i].is_used==0){
 	    idx=i;

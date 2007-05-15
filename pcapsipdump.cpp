@@ -22,17 +22,21 @@
     This would be appreciated, but not required.
 */
 
+#ifdef sparc
+#define __BIG_ENDIAN 1
+#endif
+#ifndef sparc
+#include <endian.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <getopt.h>
 #include <time.h>
 #include <signal.h>
-#include <endian.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <net/ethernet.h>
 
 #include <pcap.h>
 
@@ -45,6 +49,9 @@
 int get_sip_peername(char *data, int data_len, char *tag, char *caller, int caller_len);
 int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port);
 char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long *gettaglen);
+#ifndef _GNU_SOURCE
+void *memmem(const void* haystack, size_t hl, const void* needle, size_t nl);
+#endif
 
 calltable *ct;
 
@@ -88,8 +95,7 @@ int main(int argc, char *argv[])
     while(1) {
         char c;
 
-        c = getopt_long (argc, argv, "i:r:d:v:fpU",
-                        NULL, NULL);
+        c = getopt (argc, argv, "i:r:d:v:fpU");
         if (c == -1)
             break;
 
@@ -378,3 +384,18 @@ char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long
     *gettaglen=l;
     return rc;
 }
+
+#ifndef _GNU_SOURCE
+void *memmem(const void* haystack, size_t hl, const void* needle, size_t nl) {
+    int i;
+
+    if (nl>hl) return 0;
+    for (i=hl-nl+1; i; --i) {
+	if (!memcmp(haystack,needle,nl)){
+	    return (char*)haystack;
+	}
+	haystack=(void*)((char*)haystack+1);
+    }
+    return 0;
+}
+#endif
