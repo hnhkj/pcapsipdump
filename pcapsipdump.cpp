@@ -88,6 +88,7 @@ int main(int argc, char *argv[])
     int opt_promisc=1;
     int opt_packetbuffered=0;
     int verbosity=0;
+    char number_filter[128];
 
     ifname=NULL;
     fname=NULL;
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
     while(1) {
         char c;
 
-        c = getopt (argc, argv, "i:r:d:v:fpU");
+        c = getopt (argc, argv, "i:r:d:v:n:fpU");
         if (c == -1)
             break;
 
@@ -105,6 +106,9 @@ int main(int argc, char *argv[])
                 break;
 	    case 'v':
 		verbosity=atoi(optarg);
+		break;
+	    case 'n':
+		strcpy(number_filter,optarg);
 		break;
             case 'r':
                 fname=optarg;
@@ -137,6 +141,7 @@ int main(int argc, char *argv[])
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
 		"      but you can use partitially written file anytime, it will be consistent.\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
+		" -n   Number-filter. Only calls to/from specified number will be recorded\n"
 		,PCAPSIPDUMP_VERSION);
 	return 1;
     }
@@ -224,9 +229,14 @@ int main(int argc, char *argv[])
 		    }
 		}else if (htons(header_udp->source)==5060||
 		    htons(header_udp->dest)==5060){
+		    char caller[256];
+		    char called[256];
+
 		    data[datalen]=0;
+		    get_sip_peername(data,datalen,"From:",caller,sizeof(caller));
+		    get_sip_peername(data,datalen,"To:",called,sizeof(called));
 		    s=gettag(data,datalen,"Call-ID:",&l);
-		    if ((idx=ct->find_by_call_id(s,l))<0){
+		    if ((number_filter==NULL||(strcmp(number_filter,caller)==0)||(strcmp(number_filter,called)==0))&&((idx=ct->find_by_call_id(s,l))<0)){
 			if ((idx=ct->add(s,l,header.ts.tv_sec))<0){
 			    printf("Too many simultaneous calls. Ran out of call table space!\n");
 			}else{
@@ -244,11 +254,7 @@ int main(int argc, char *argv[])
 			    }
 			    if ((strcmp(sip_method,"INVITE")==0)||(strcmp(sip_method,"OPTIONS")==0)||(strcmp(sip_method,"REGISTER")==0)){
 				struct tm *t;
-				char caller[256];
-				char called[256];
 				t=localtime(&header.ts.tv_sec);
-				get_sip_peername(data,datalen,"From:",caller,sizeof(caller));
-				get_sip_peername(data,datalen,"To:",called,sizeof(called));
 				sprintf(str2,"%04d%02d%02d",
 					t->tm_year+1900,t->tm_mon+1,t->tm_mday);
 				mkdir(str2,0700);
