@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
 		    get_sip_peername(data,datalen,"From:",caller,sizeof(caller));
 		    get_sip_peername(data,datalen,"To:",called,sizeof(called));
 		    s=gettag(data,datalen,"Call-ID:",&l);
-		    if ((number_filter==NULL||(strcmp(number_filter,caller)==0)||(strcmp(number_filter,called)==0))&&((idx=ct->find_by_call_id(s,l))<0)){
+		    if ( ((idx=ct->find_by_call_id(s,l))<0) && (number_filter==NULL||(strcmp(number_filter,caller)==0)||(strcmp(number_filter,called)==0)) ){
 			if ((idx=ct->add(s,l,header.ts.tv_sec))<0){
 			    printf("Too many simultaneous calls. Ran out of call table space!\n");
 			}else{
@@ -285,7 +285,7 @@ int main(int argc, char *argv[])
 		    }
 
 		    s=gettag(data,datalen,"Content-Type:",&l);
-		    if(l>0 && strncasecmp(s,"application/sdp",l)==0 && strstr(data,"\r\n\r\n")!=NULL){
+		    if(idx>=0 && l>0 && strncasecmp(s,"application/sdp",l)==0 && strstr(data,"\r\n\r\n")!=NULL){
 			in_addr_t tmp_addr;
 			unsigned short tmp_port;
 			if (!get_ip_port_from_sdp(strstr(data,"\r\n\r\n")+1,&tmp_addr,&tmp_port)){
