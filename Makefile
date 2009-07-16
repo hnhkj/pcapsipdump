@@ -1,10 +1,12 @@
+LIBS ?= -lpcap -lstdc++
+
 all: pcapsipdump
 
 pcapsipdump: pcapsipdump.cpp calltable.cpp calltable.h
-	$(CC) $(CPPFLAGS) $(LDFLAGS) pcapsipdump.cpp calltable.cpp -o pcapsipdump -lpcap -lstdc++
+	$(CC) $(CPPFLAGS) $(LDFLAGS) $(LIBS) pcapsipdump.cpp calltable.cpp -o pcapsipdump
 
 pcapsipdump-debug: pcapsipdump.cpp calltable.cpp calltable.h
-	$(CC) $(CPPFLAGS) $(LDFLAGS) -ggdb pcapsipdump.cpp calltable.cpp -o pcapsipdump-debug -lpcap -lstdc++
+	$(CC) $(CPPFLAGS) $(LDFLAGS) $(LIBS) -ggdb pcapsipdump.cpp calltable.cpp -o pcapsipdump-debug
 
 clean:
 	rm -f pcapsipdump

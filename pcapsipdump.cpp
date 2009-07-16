@@ -46,7 +46,7 @@
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
-int get_sip_peername(char *data, int data_len, char *tag, char *caller, int caller_len);
+int get_sip_peername(char *data, int data_len, const char *tag, char *caller, int caller_len);
 int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port);
 char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long *gettaglen);
 #ifndef _GNU_SOURCE
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 {
 
     pcap_t *handle;/* Session handle */
-    char *opt_chdir;/* directory to write dump */
+    const char *opt_chdir;/* directory to write dump */
     char *ifname;/* interface to sniff on */
     char *fname;/* pcap file to read on */
     char errbuf[PCAP_ERRBUF_SIZE];/* Error string */
@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
     return(0);
 }
 
-int get_sip_peername(char *data, int data_len, char *tag, char *peername, int peername_len){
+int get_sip_peername(char *data, int data_len, const char *tag, char *peername, int peername_len){
     unsigned long r,r2,peername_tag_len;
     char *peername_tag=gettag(data,data_len,tag,&peername_tag_len);
     if ((r=(unsigned long)memmem(peername_tag,peername_tag_len,"sip:",4))==0){
