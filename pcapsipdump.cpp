@@ -81,9 +81,11 @@ int main(int argc, char *argv[])
     char filter_exp[] = "udp";/* The filter expression */
     bpf_u_int32 mask;/* Our netmask */
     bpf_u_int32 net;/* Our IP */
-    struct pcap_pkthdr header;/* The header that pcap gives us */
-    const u_char *packet;/* The actual packet */
+    struct pcap_pkthdr *pkt_header; /* The header that pcap gives us */
+    const u_char *pkt_data; /* The actual packet */
     unsigned long last_cleanup=0;
+    int res;
+    int offset_to_ip=0;
     int opt_fork=1;
     int opt_promisc=1;
     int opt_packetbuffered=0;
@@ -93,6 +95,8 @@ int main(int argc, char *argv[])
     ifname=NULL;
     fname=NULL;
     opt_chdir="/var/spool/pcapsipdump";
+    number_filter[0]=0;
+
     while(1) {
         char c;
 
@@ -191,7 +195,25 @@ int main(int argc, char *argv[])
 	if (fork()) exit(0);
     }
 
-    while ((packet = pcap_next(handle, &header))){
+    {
+	int dlt=pcap_datalink(handle);
+	switch (dlt){
+	    case DLT_EN10MB :
+		offset_to_ip=sizeof(struct ether_header);
+		break;
+	    case DLT_RAW :
+		offset_to_ip=0;
+		break;
+	    default : {
+		printf("Unknown interface type (%d).\n",dlt);
+		return 3;
+	    }
+	}
+    }
+
+
+    /* Retrieve the packets */
+    while((res = pcap_next_ex( handle, &pkt_header, &pkt_data)) >= 0){
 	{
 	    struct iphdr *header_ip;
 	    struct udphdr *header_udp;
@@ -202,29 +224,31 @@ int main(int argc, char *argv[])
 	    unsigned long l;
 	    int idx;
 
-	    if (header.ts.tv_sec-last_cleanup>15){
-		if (last_cleanup>=0){
-		    ct->do_cleanup(header.ts.tv_sec);
-		}
-		last_cleanup=header.ts.tv_sec;
-	    }
+        if(res == 0)
+            /* Timeout elapsed */
+            continue;
 
-	    header_ip=(iphdr *)((char*)packet+sizeof(struct ether_header));
+	    if (pkt_header->ts.tv_sec-last_cleanup>15){
+		if (last_cleanup>=0){
+		    ct->do_cleanup(pkt_header->ts.tv_sec);
+		}
+		last_cleanup=pkt_header->ts.tv_sec;
+	    }
+	    header_ip=(iphdr *)((char*)pkt_data+offset_to_ip);
 	    if (header_ip->protocol==17){//UPPROTO_UDP=17
 		header_udp=(udphdr *)((char*)header_ip+sizeof(*header_ip));
 		data=(char *)header_udp+sizeof(*header_udp);
-		datalen=header.len-((unsigned long)data-(unsigned long)packet);
-
+		datalen=pkt_header->len-((unsigned long)data-(unsigned long)pkt_data);
 		if ((idx=ct->find_ip_port(header_ip->daddr,htons(header_udp->dest)))>=0){
 		    if (ct->table[idx].f_pcap!=NULL){
-			ct->table[idx].last_packet_time=header.ts.tv_sec;
-			pcap_dump((u_char *)ct->table[idx].f_pcap,&header,packet);
+			ct->table[idx].last_packet_time=pkt_header->ts.tv_sec;
+			pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
 			if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
 		    }
 		}else if ((idx=ct->find_ip_port(header_ip->saddr,htons(header_udp->source)))>=0){
 		    if (ct->table[idx].f_pcap!=NULL){
-			ct->table[idx].last_packet_time=header.ts.tv_sec;
-			pcap_dump((u_char *)ct->table[idx].f_pcap,&header,packet);
+			ct->table[idx].last_packet_time=pkt_header->ts.tv_sec;
+			pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
 			if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
 		    }
 		}else if (htons(header_udp->source)==5060||
@@ -236,8 +260,8 @@ int main(int argc, char *argv[])
 		    get_sip_peername(data,datalen,"From:",caller,sizeof(caller));
 		    get_sip_peername(data,datalen,"To:",called,sizeof(called));
 		    s=gettag(data,datalen,"Call-ID:",&l);
-		    if ( ((idx=ct->find_by_call_id(s,l))<0) && (number_filter==NULL||(strcmp(number_filter,caller)==0)||(strcmp(number_filter,called)==0)) ){
-			if ((idx=ct->add(s,l,header.ts.tv_sec))<0){
+		    if ( ((idx=ct->find_by_call_id(s,l))<0) && (number_filter[0]==0||(strcmp(number_filter,caller)==0)||(strcmp(number_filter,called)==0)) ){
+			if ((idx=ct->add(s,l,pkt_header->ts.tv_sec))<0){
 			    printf("Too many simultaneous calls. Ran out of call table space!\n");
 			}else{
 			    char sip_method[256];
@@ -254,7 +278,7 @@ int main(int argc, char *argv[])
 			    }
 			    if ((strcmp(sip_method,"INVITE")==0)||(strcmp(sip_method,"OPTIONS")==0)||(strcmp(sip_method,"REGISTER")==0)){
 				struct tm *t;
-				t=localtime(&header.ts.tv_sec);
+				t=localtime(&pkt_header->ts.tv_sec);
 				sprintf(str2,"%04d%02d%02d",
 					t->tm_year+1900,t->tm_mon+1,t->tm_mday);
 				mkdir(str2,0700);
@@ -298,7 +322,7 @@ int main(int argc, char *argv[])
 		    }
 
 		    if (ct->table[idx].f_pcap!=NULL){
-			pcap_dump((u_char *)ct->table[idx].f_pcap,&header,packet);
+			pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
 			if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
 		    }
 		}else{
