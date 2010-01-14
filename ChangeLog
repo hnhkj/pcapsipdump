@@ -1,3 +1,9 @@
+Thu Jan 14 15:51:17 CET 2010
+        * Switch to pcap_next_ex (fixes program termination when there is no
+          traffic on interface
+        * Allow capture on Raw IP interfaces
+        * add -n option to filter calls only to/from specific address
+
 Tue May 15 22:03:33 MSD 2007
         * Port code to sun sparc/solaris
         * Fix startup script for suse compatibility
