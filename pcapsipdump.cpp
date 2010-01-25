@@ -49,6 +49,7 @@
 int get_sip_peername(char *data, int data_len, const char *tag, char *caller, int caller_len);
 int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port);
 char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long *gettaglen);
+uint32_t get_ssrc (void *ip_packet_data);
 #ifndef _GNU_SOURCE
 void *memmem(const void* haystack, size_t hl, const void* needle, size_t nl);
 #endif
@@ -244,25 +245,42 @@ int main(int argc, char *argv[])
 	    }
 	    header_ip=(iphdr *)((char*)pkt_data+offset_to_ip);
 	    if (header_ip->protocol==17){//UPPROTO_UDP=17
-		header_udp=(udphdr *)((char*)header_ip+sizeof(*header_ip));
-		data=(char *)header_udp+sizeof(*header_udp);
-		datalen=pkt_header->len-((unsigned long)data-(unsigned long)pkt_data);
-		if ((idx=ct->find_ip_port(header_ip->daddr,htons(header_udp->dest)))>=0){
-		    if (ct->table[idx].f_pcap!=NULL){
-			ct->table[idx].last_packet_time=pkt_header->ts.tv_sec;
-			pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
-			if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
-		    }
-		}else if ((idx=ct->find_ip_port(header_ip->saddr,htons(header_udp->source)))>=0){
-		    if (ct->table[idx].f_pcap!=NULL){
-			ct->table[idx].last_packet_time=pkt_header->ts.tv_sec;
-			pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
-			if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
-		    }
-		}else if (htons(header_udp->source)==5060||
-		    htons(header_udp->dest)==5060){
-		    char caller[256];
-		    char called[256];
+                int idx_leg=0;
+                int idx_rtp=0;
+
+                header_udp=(udphdr *)((char*)header_ip+sizeof(*header_ip));
+                data=(char *)header_udp+sizeof(*header_udp);
+                datalen=pkt_header->len-((unsigned long)data-(unsigned long)pkt_data);
+
+                if (ct->find_ip_port_ssrc(header_ip->daddr,htons(header_udp->dest),get_ssrc(data),&idx_leg,&idx_rtp)){
+                    if (ct->table[idx_leg].f_pcap!=NULL) {
+                        ct->table[idx].last_packet_time=pkt_header->ts.tv_sec;
+                        pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
+                        if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
+                    }
+                }else if (ct->find_ip_port_ssrc(header_ip->saddr,htons(header_udp->source),get_ssrc(data),&idx_leg,&idx_rtp)){
+                    if (ct->table[idx_leg].f_pcap!=NULL) {
+                        ct->table[idx].last_packet_time=pkt_header->ts.tv_sec;
+                        pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
+                        if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
+                    }
+            }else if (htons(header_udp->source)==5060||
+                    htons(header_udp->dest)==5060){
+                    char caller[256];
+                    char called[256];
+                    char sip_method[256];
+
+                    //figure out method
+                    memcpy(sip_method,data,sizeof(sip_method)-1);
+                    sip_method[sizeof(sip_method)-1]=' ';
+                    if (strchr(sip_method,' ')!=NULL){
+                        *strchr(sip_method,' ')='\0';
+                    }else{
+                        sip_method[0]='\0';
+                        if (verbosity>=2){
+                            printf("Empty SIP method!\n");
+                        }
+                    }
 
 		    data[datalen]=0;
 		    get_sip_peername(data,datalen,"From:",caller,sizeof(caller));
@@ -272,18 +290,6 @@ int main(int argc, char *argv[])
 			if ((idx=ct->add(s,l,pkt_header->ts.tv_sec))<0){
 			    printf("Too many simultaneous calls. Ran out of call table space!\n");
 			}else{
-			    char sip_method[256];
-			    //figure out method
-			    memcpy(sip_method,data,sizeof(sip_method)-1);
-			    sip_method[sizeof(sip_method)-1]=' ';
-			    if (strchr(sip_method,' ')!=NULL){
-				*strchr(sip_method,' ')='\0';
-			    }else{
-				sip_method[0]='\0';
-				if (verbosity>=2){
-				    printf("Empty SIP method!\n");
-				}
-			    }
 			    if ((strcmp(sip_method,"INVITE")==0)||(strcmp(sip_method,"OPTIONS")==0)||(strcmp(sip_method,"REGISTER")==0)){
 				struct tm *t;
 				t=localtime(&pkt_header->ts.tv_sec);
@@ -317,6 +323,10 @@ int main(int argc, char *argv[])
 			}
 		    }
 
+                    // idx holds a valid pointer to open leg at this point
+                    if (strcmp(sip_method,"BYE")==0){
+                        ct->table[idx].had_bye=1;
+                    }
 		    s=gettag(data,datalen,"Content-Type:",&l);
 		    if(idx>=0 && l>0 && strncasecmp(s,"application/sdp",l)==0 && strstr(data,"\r\n\r\n")!=NULL){
 			in_addr_t tmp_addr;
@@ -427,6 +437,10 @@ char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long
     }
     *gettaglen=l;
     return rc;
+}
+
+inline uint32_t get_ssrc (void *udp_packet_data_pointer){
+    return ntohl(*(uint32_t*)(udp_packet_data_pointer+8));
 }
 
 #ifndef _GNU_SOURCE

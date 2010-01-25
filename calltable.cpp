@@ -58,6 +58,7 @@ int calltable::add(
     }
     table[idx].is_used=1;
     table[idx].had_t38=0;
+    table[idx].had_bye=0;
     memcpy(table[idx].call_id,call_id,MIN(call_id_len,32));
     table[idx].call_id_len=call_id_len;
     table[idx].ip_n=0;
@@ -121,6 +122,30 @@ int calltable::find_ip_port(
 	} 
     }
     return -1;
+}
+
+//returns 1 if found or 0 if not found, and updates idx_leg and idx_rtp
+int calltable::find_ip_port_ssrc(
+            in_addr_t addr,
+            unsigned short port,
+            uint32_t ssrc,
+            int *idx_leg,
+            int *idx_rtp)
+{
+    int i_leg,i_rtp;
+    for(i_leg=0;i_leg<(int)table_size;i_leg++){
+        for(i_rtp=0;i_rtp<table[i_leg].ip_n;i_rtp++){
+            if(table[i_leg].port[i_rtp]==port && table[i_leg].ip[i_rtp]==addr){
+                if (!table[i_leg].had_bye || table[i_leg].ssrc[i_rtp]==ssrc){
+                    table[i_leg].ssrc[i_rtp]=ssrc;
+                    *idx_leg=i_leg;
+                    *idx_rtp=i_rtp;
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 int calltable::do_cleanup( time_t currtime ){

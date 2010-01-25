@@ -30,11 +30,13 @@
 
 struct calltable_element {
 	unsigned char is_used;
+	unsigned char had_bye;
 	unsigned char had_t38;
 	char call_id[32];
 	unsigned long call_id_len ;
 	in_addr_t ip[calltable_max_ip_per_call];
-	unsigned short port[calltable_max_ip_per_call];
+        uint16_t port[calltable_max_ip_per_call];
+        uint32_t ssrc[calltable_max_ip_per_call];
 	int ip_n;
 	time_t last_packet_time;
 	pcap_dumper_t *f_pcap;
@@ -60,6 +62,12 @@ class calltable
 	int find_ip_port(
 	    in_addr_t addr,
 	    unsigned short port);
+        int find_ip_port_ssrc(
+            in_addr_t addr,
+            unsigned short port,
+            uint32_t ssrc,
+            int *idx_leg,
+            int *idx_rtp);
 	int do_cleanup( time_t currtime );
 	calltable_element *table;
 	bool erase_non_t38;
