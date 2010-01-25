@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include "calltable.h"
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
@@ -35,6 +36,7 @@ calltable::calltable()
 {
     table_size=0;
     table=(calltable_element*)malloc(sizeof(calltable_element)*calltable_max);
+    erase_non_t38=0;
 }
 
 int calltable::add(
@@ -55,6 +57,7 @@ int calltable::add(
 	table_size++;
     }
     table[idx].is_used=1;
+    table[idx].had_t38=0;
     memcpy(table[idx].call_id,call_id,MIN(call_id_len,32));
     table[idx].call_id_len=call_id_len;
     table[idx].ip_n=0;
@@ -130,9 +133,12 @@ int calltable::do_cleanup( time_t currtime ){
 	    if (table[idx].f!=NULL){
 		fclose(table[idx].f);
 	    }
+	    if (erase_non_t38 && !table[idx].had_t38){
+	        unlink(table[idx].fn_pcap);
+	    }
 	    memset((void*)&table[idx],0,sizeof(table[idx]));
 	    table[idx].is_used=0;
-	} 
+	}
     }
     return 0;
 }

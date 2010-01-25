@@ -89,6 +89,7 @@ int main(int argc, char *argv[])
     int opt_fork=1;
     int opt_promisc=1;
     int opt_packetbuffered=0;
+    int opt_t38only=0;
     int verbosity=0;
     char number_filter[128];
 
@@ -100,7 +101,7 @@ int main(int argc, char *argv[])
     while(1) {
         char c;
 
-        c = getopt (argc, argv, "i:r:d:v:n:fpU");
+        c = getopt (argc, argv, "i:r:d:v:n:fpUt");
         if (c == -1)
             break;
 
@@ -108,12 +109,15 @@ int main(int argc, char *argv[])
             case 'i':
                 ifname=optarg;
                 break;
-	    case 'v':
-		verbosity=atoi(optarg);
-		break;
-	    case 'n':
-		strcpy(number_filter,optarg);
-		break;
+            case 'v':
+                verbosity=atoi(optarg);
+                break;
+            case 'n':
+                strcpy(number_filter,optarg);
+                break;
+            case 't':
+                opt_t38only=1;
+                break;
             case 'r':
                 fname=optarg;
                 break;
@@ -146,11 +150,15 @@ int main(int argc, char *argv[])
 		"      but you can use partitially written file anytime, it will be consistent.\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
 		" -n   Number-filter. Only calls to/from specified number will be recorded\n"
+		" -t   T.38-filter. Only calls, containing T.38 payload indicated in SDP will be recorded\n"
 		,PCAPSIPDUMP_VERSION);
 	return 1;
     }
 
     ct = new calltable;
+    if (opt_t38only){
+        ct->erase_non_t38=1;
+    }
     signal(SIGINT,sigint_handler);
     signal(SIGTERM,sigterm_handler);
 
@@ -224,9 +232,9 @@ int main(int argc, char *argv[])
 	    unsigned long l;
 	    int idx;
 
-        if(res == 0)
-            /* Timeout elapsed */
-            continue;
+            if(res == 0)
+                /* Timeout elapsed */
+                continue;
 
 	    if (pkt_header->ts.tv_sec-last_cleanup>15){
 		if (last_cleanup>=0){
@@ -298,6 +306,7 @@ int main(int argc, char *argv[])
 				*strstr(str2,".raw")='\0';
 				strcat(str2,".pcap");
 				ct->table[idx].f_pcap=pcap_dump_open(handle,str2);
+				strncpy(ct->table[idx].fn_pcap,str2,sizeof(ct->table[idx].fn_pcap));
 			    }else{
 				if (verbosity>=2){
 				    printf("Unknown SIP method:'%s'!\n",sip_method);
@@ -318,6 +327,9 @@ int main(int argc, char *argv[])
 			    if (verbosity>=2){
 				printf("Can't get ip/port from SDP:\n%s\n\n",strstr(data,"\r\n\r\n")+1);
 			    }
+			}
+			if (opt_t38only && memmem(data,datalen,"udptl t38",9)!=NULL){
+			    ct->table[idx].had_t38=1;
 			}
 		    }
 
@@ -341,6 +353,8 @@ int main(int argc, char *argv[])
 	    }
 	}
     }
+    /* flush / close files */
+    ct->do_cleanup(1<<31);
     /* And close the session */
     pcap_close(handle);
     return(0);

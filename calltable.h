@@ -30,6 +30,7 @@
 
 struct calltable_element {
 	unsigned char is_used;
+	unsigned char had_t38;
 	char call_id[32];
 	unsigned long call_id_len ;
 	in_addr_t ip[calltable_max_ip_per_call];
@@ -38,6 +39,7 @@ struct calltable_element {
 	time_t last_packet_time;
 	pcap_dumper_t *f_pcap;
 	FILE *f;
+	char fn_pcap[128];
 };
 
 class calltable
@@ -60,6 +62,7 @@ class calltable
 	    unsigned short port);
 	int do_cleanup( time_t currtime );
 	calltable_element *table;
+	bool erase_non_t38;
     private:
 	unsigned long table_size;
 	time_t global_last_packet_time;
