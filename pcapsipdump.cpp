@@ -254,15 +254,15 @@ int main(int argc, char *argv[])
 
                 if (ct->find_ip_port_ssrc(header_ip->daddr,htons(header_udp->dest),get_ssrc(data),&idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
-                        ct->table[idx].last_packet_time=pkt_header->ts.tv_sec;
-                        pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
-                        if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
+                        ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
+                        pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
+                        if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx_leg].f_pcap);}
                     }
                 }else if (ct->find_ip_port_ssrc(header_ip->saddr,htons(header_udp->source),get_ssrc(data),&idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
-                        ct->table[idx].last_packet_time=pkt_header->ts.tv_sec;
-                        pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
-                        if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
+                        ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
+                        pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
+                        if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx_leg].f_pcap);}
                     }
             }else if (htons(header_udp->source)==5060||
                     htons(header_udp->dest)==5060){
