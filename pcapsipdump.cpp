@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
 		    get_sip_peername(data,datalen,"From:",caller,sizeof(caller));
 		    get_sip_peername(data,datalen,"To:",called,sizeof(called));
 		    s=gettag(data,datalen,"Call-ID:",&l);
-		    if ( ((idx=ct->find_by_call_id(s,l))<0) && (number_filter[0]==0||(strcmp(number_filter,caller)==0)||(strcmp(number_filter,called)==0)) ){
+		    if (s!=NULL && ((idx=ct->find_by_call_id(s,l))<0) && (number_filter[0]==0||(strcmp(number_filter,caller)==0)||(strcmp(number_filter,called)==0)) ){
 			if ((idx=ct->add(s,l,pkt_header->ts.tv_sec))<0){
 			    printf("Too many simultaneous calls. Ran out of call table space!\n");
 			}else{
