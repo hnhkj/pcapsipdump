@@ -1,4 +1,4 @@
-pcapsipdump version 0.1.4
+pcapsipdump version 0.1.4-trunk
 
 Usage: pcapsipdump [-fp] [-i <interface>] [-r <file>] [-d <working directory>]
  -f     Do not fork or detach from controlling terminal.

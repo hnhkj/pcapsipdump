@@ -440,7 +440,7 @@ char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long
 }
 
 inline uint32_t get_ssrc (void *udp_packet_data_pointer){
-    return ntohl(*(uint32_t*)(udp_packet_data_pointer+8));
+    return ntohl(*(uint32_t*)((uint8_t*)udp_packet_data_pointer+8));
 }
 
 #ifndef _GNU_SOURCE
