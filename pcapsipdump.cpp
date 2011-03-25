@@ -91,6 +91,7 @@ int main(int argc, char *argv[])
     int opt_promisc=1;
     int opt_packetbuffered=0;
     int opt_t38only=0;
+    int opt_save_rtp=1;
     int verbosity=0;
     char number_filter[128];
 
@@ -102,7 +103,7 @@ int main(int argc, char *argv[])
     while(1) {
         char c;
 
-        c = getopt (argc, argv, "i:r:d:v:n:fpUt");
+        c = getopt (argc, argv, "i:r:d:v:n:fpNUt");
         if (c == -1)
             break;
 
@@ -115,6 +116,9 @@ int main(int argc, char *argv[])
                 break;
             case 'n':
                 strcpy(number_filter,optarg);
+                break;
+            case 'N':
+                opt_save_rtp=0;
                 break;
             case 't':
                 opt_t38only=1;
@@ -144,9 +148,10 @@ int main(int argc, char *argv[])
 
     if ((fname==NULL)&&(ifname==NULL)){
 	printf( "pcapsipdump version %s\n"
-		"Usage: pcapsipdump [-fpU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level]\n"
+		"Usage: pcapsipdump [-fpNU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
+		" -N   No RTP. Save only SIP signalling.\n"
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
 		"      but you can use partitially written file anytime, it will be consistent.\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
@@ -252,19 +257,19 @@ int main(int argc, char *argv[])
                 data=(char *)header_udp+sizeof(*header_udp);
                 datalen=pkt_header->len-((unsigned long)data-(unsigned long)pkt_data);
 
-                if (ct->find_ip_port_ssrc(header_ip->daddr,htons(header_udp->dest),get_ssrc(data),&idx_leg,&idx_rtp)){
+                if (opt_save_rtp && ct->find_ip_port_ssrc(header_ip->daddr,htons(header_udp->dest),get_ssrc(data),&idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
                         ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
                         pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
                         if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx_leg].f_pcap);}
                     }
-                }else if (ct->find_ip_port_ssrc(header_ip->saddr,htons(header_udp->source),get_ssrc(data),&idx_leg,&idx_rtp)){
+                }else if (opt_save_rtp && ct->find_ip_port_ssrc(header_ip->saddr,htons(header_udp->source),get_ssrc(data),&idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
                         ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
                         pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
                         if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx_leg].f_pcap);}
                     }
-            }else if (htons(header_udp->source)==5060||
+                }else if (htons(header_udp->source)==5060||
                     htons(header_udp->dest)==5060){
                     char caller[256];
                     char called[256];
