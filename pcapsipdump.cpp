@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
     while(1) {
         char c;
 
-        c = getopt (argc, argv, "i:r:d:v:n:fpNUt");
+        c = getopt (argc, argv, "i:r:d:v:n:R:fpUt");
         if (c == -1)
             break;
 
@@ -117,8 +117,19 @@ int main(int argc, char *argv[])
             case 'n':
                 strcpy(number_filter,optarg);
                 break;
-            case 'N':
-                opt_save_rtp=0;
+            case 'R':
+                if (strcasecmp(optarg,"none")==0){
+                    opt_save_rtp=0;
+                }else if (strcasecmp(optarg,"rtpevent")==0){
+                    opt_save_rtp=2;
+                }else if (strcasecmp(optarg,"t38")==0){
+                    opt_t38only=1;
+                }else if (strcasecmp(optarg,"all")==0){
+                    opt_save_rtp=1;
+                }else{
+                    printf("Unrecognized RTP filter specification: '%s'\n",optarg);
+	            return 1;
+                }
                 break;
             case 't':
                 opt_t38only=1;
@@ -148,10 +159,10 @@ int main(int argc, char *argv[])
 
     if ((fname==NULL)&&(ifname==NULL)){
 	printf( "pcapsipdump version %s\n"
-		"Usage: pcapsipdump [-fpNU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level]\n"
+		"Usage: pcapsipdump [-fpU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level] [-R filter]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
-		" -N   No RTP. Save only SIP signalling.\n"
+		" -R   RTP filter. Possible values: 'all' (default), 'rtpevent', 't38', or 'none'.\n"
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
 		"      but you can use partitially written file anytime, it will be consistent.\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
@@ -252,18 +263,24 @@ int main(int argc, char *argv[])
 	    if (header_ip->protocol==17){//UPPROTO_UDP=17
                 int idx_leg=0;
                 int idx_rtp=0;
+                int save_this_rtp_packet=0;
 
                 header_udp=(udphdr *)((char*)header_ip+sizeof(*header_ip));
                 data=(char *)header_udp+sizeof(*header_udp);
                 datalen=pkt_header->len-((unsigned long)data-(unsigned long)pkt_data);
 
-                if (opt_save_rtp && ct->find_ip_port_ssrc(header_ip->daddr,htons(header_udp->dest),get_ssrc(data),&idx_leg,&idx_rtp)){
+                if ((opt_save_rtp==1) ||
+                    (opt_save_rtp==2 && datalen==18 && (data[0]&0xff) == 0x80 && (data[1]&0x7d) == 0x65 )){
+                    save_this_rtp_packet=1;
+                }
+
+                if (save_this_rtp_packet && ct->find_ip_port_ssrc(header_ip->daddr,htons(header_udp->dest),get_ssrc(data),&idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
                         ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
                         pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
                         if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx_leg].f_pcap);}
                     }
-                }else if (opt_save_rtp && ct->find_ip_port_ssrc(header_ip->saddr,htons(header_udp->source),get_ssrc(data),&idx_leg,&idx_rtp)){
+                }else if (save_this_rtp_packet && ct->find_ip_port_ssrc(header_ip->saddr,htons(header_udp->source),get_ssrc(data),&idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
                         ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
                         pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
