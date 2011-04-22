@@ -426,6 +426,9 @@ int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port){
 	return 1;
     }
     s=gettag(sdp_text,strlen(sdp_text),"m=audio ",&l);
+    if (l==0){
+        s=gettag(sdp_text,strlen(sdp_text),"m=image ",&l);
+    }
     if (l==0 || (*port=atoi(s))==0){
 	*port=0;
 	return 1;
