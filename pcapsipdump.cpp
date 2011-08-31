@@ -226,6 +226,9 @@ int main(int argc, char *argv[])
 	    case DLT_EN10MB :
 		offset_to_ip=sizeof(struct ether_header);
 		break;
+	    case DLT_LINUX_SLL :
+		offset_to_ip=16;
+		break;
 	    case DLT_RAW :
 		offset_to_ip=0;
 		break;

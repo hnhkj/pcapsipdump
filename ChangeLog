@@ -1,3 +1,6 @@
+Wed Aug 31 04:05:41 PDT 2011
+        * Allow parsing pcap files with DLT_LINUX_SLL (113) interface type
+
 Thu Jan 14 15:51:17 CET 2010
         * Switch to pcap_next_ex (fixes program termination when there is no
           traffic on interface
