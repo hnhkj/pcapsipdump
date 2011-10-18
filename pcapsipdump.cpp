@@ -37,6 +37,9 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef USE_REGEXP
+#include <regex.h>
+#endif
 
 #include <pcap.h>
 
@@ -93,12 +96,18 @@ int main(int argc, char *argv[])
     int opt_t38only=0;
     int opt_save_rtp=1;
     int verbosity=0;
+    bool number_filter_matched=false;
+#ifdef USE_REGEXP
+    regex_t number_filter;
+    number_filter.allocated=0;
+#else
     char number_filter[128];
+    number_filter[0]=0;
+#endif
 
     ifname=NULL;
     fname=NULL;
     opt_chdir="/var/spool/pcapsipdump";
-    number_filter[0]=0;
 
     while(1) {
         char c;
@@ -115,7 +124,11 @@ int main(int argc, char *argv[])
                 verbosity=atoi(optarg);
                 break;
             case 'n':
+#ifdef USE_REGEXP
+                regcomp(&number_filter,optarg,0);
+#else
                 strcpy(number_filter,optarg);
+#endif
                 break;
             case 'R':
                 if (strcasecmp(optarg,"none")==0){
@@ -311,7 +324,22 @@ int main(int argc, char *argv[])
 		    get_sip_peername(data,datalen,"From:",caller,sizeof(caller));
 		    get_sip_peername(data,datalen,"To:",called,sizeof(called));
 		    s=gettag(data,datalen,"Call-ID:",&l);
-		    if (s!=NULL && ((idx=ct->find_by_call_id(s,l))<0) && (number_filter[0]==0||(strcmp(number_filter,caller)==0)||(strcmp(number_filter,called)==0)) ){
+                    number_filter_matched=false;
+#ifdef USE_REGEXP
+                    {
+                        regmatch_t pmatch[1];
+                        if ((number_filter.allocated==0) ||
+                            (regexec(&number_filter, caller, 1, pmatch, 0)==0) ||
+                            (regexec(&number_filter, called, 1, pmatch, 0)==0)) {
+                            number_filter_matched=true;
+                        }
+                    }
+#else
+                    if (number_filter[0]==0||(strcmp(number_filter,caller)==0)||(strcmp(number_filter,called)==0)) {
+                        number_filter_matched=true;
+                    }
+#endif
+		    if (s!=NULL && ((idx=ct->find_by_call_id(s,l))<0) && number_filter_matched){
 			if ((idx=ct->add(s,l,pkt_header->ts.tv_sec))<0){
 			    printf("Too many simultaneous calls. Ran out of call table space!\n");
 			}else{

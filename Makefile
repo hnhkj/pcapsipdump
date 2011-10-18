@@ -1,12 +1,13 @@
 LIBS ?= -lpcap -lstdc++
+#DEFS ?= -DUSE_REGEXP
 
 all: pcapsipdump
 
 pcapsipdump: pcapsipdump.cpp calltable.cpp calltable.h
-	$(CC) $(CPPFLAGS) $(LDFLAGS) $(LIBS) pcapsipdump.cpp calltable.cpp -o pcapsipdump
+	$(CC) $(CPPFLAGS) $(LDFLAGS) $(LIBS) $(DEFS) pcapsipdump.cpp calltable.cpp -o pcapsipdump
 
 pcapsipdump-debug: pcapsipdump.cpp calltable.cpp calltable.h
-	$(CC) $(CPPFLAGS) $(LDFLAGS) $(LIBS) -ggdb pcapsipdump.cpp calltable.cpp -o pcapsipdump-debug
+	$(CC) $(CPPFLAGS) $(LDFLAGS) $(LIBS) $(DEFS) -ggdb pcapsipdump.cpp calltable.cpp -o pcapsipdump-debug
 
 clean:
 	rm -f pcapsipdump
