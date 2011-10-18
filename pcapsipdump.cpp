@@ -474,22 +474,23 @@ char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long
     tl=strlen(tag);
     r=(unsigned long)memmem(ptr,len,tag,tl);
     if(r==0){
-	l=0;
+        l=0;
     }else{
-	r+=tl;
-	l=(unsigned long)memmem((void *)r,len-(r-(unsigned long)ptr),"\r\n",2);
-	if (l>0){
-	    l-=r;
-	}else{
-	    l=0;
-	}
+        r+=tl;
+        l=(unsigned long)memmem((void *)r,len-(r-(unsigned long)ptr),"\r\n",2);
+        if (l>0){
+            l-=r;
+        }else{
+            l=0;
+            r=0;
+        }
     }
     rc=(char*)r;
     if (rc){
-	while (rc[0]==' '){
-	    rc++;
-	    l--;
-	}
+        while (rc[0]==' '){
+            rc++;
+            l--;
+        }
     }
     *gettaglen=l;
     return rc;
