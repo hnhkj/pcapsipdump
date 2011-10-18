@@ -14,7 +14,7 @@ clean:
 
 install:
 	install pcapsipdump ${DESTDIR}/usr/sbin/pcapsipdump
-	install redhat/pcapsipdump.init ${DESTDIR}/etc/init.d/pcapsipdump
+	install redhat/pcapsipdump.init ${DESTDIR}/etc/rc.d/init.d/pcapsipdump
 	install redhat/pcapsipdump.sysconfig ${DESTDIR}/etc/sysconfig/pcapsipdump
 	mkdir -p ${DESTDIR}/var/spool/pcapsipdump
 	chmod 0700 ${DESTDIR}/var/spool/pcapsipdump
