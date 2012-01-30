@@ -288,6 +288,7 @@ int main(int argc, char *argv[])
                 int idx_leg=0;
                 int idx_rtp=0;
                 int save_this_rtp_packet=0;
+                int is_rtcp=0;
                 uint16_t rtp_port_mask=0xffff;
 
                 header_udp=(udphdr *)((char*)header_ip+sizeof(*header_ip));
@@ -299,6 +300,7 @@ int main(int argc, char *argv[])
                 }else if (opt_rtpsave==RTPSAVE_RTP_RTCP){
                     save_this_rtp_packet=1;
                     rtp_port_mask=0xfffe;
+                    is_rtcp=(htons(header_udp->src) & 1) && (htons(header_udp->dest) & 1);
                 }else if (opt_rtpsave==RTPSAVE_RTPEVENT &&
                            datalen==18 && (data[0]&0xff) == 0x80 && (data[1]&0x7d) == 0x65){
                     save_this_rtp_packet=1;
@@ -309,7 +311,7 @@ int main(int argc, char *argv[])
                 if (save_this_rtp_packet &&
                         ct->find_ip_port_ssrc(
                             header_ip->daddr,htons(header_udp->dest) & rtp_port_mask,
-                            get_ssrc(data,htons(header_udp->dest) & 1), //is_rtcp?
+                            get_ssrc(data,is_rtcp),
                             &idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
                         ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
@@ -319,7 +321,7 @@ int main(int argc, char *argv[])
                 }else if (save_this_rtp_packet &&
                         ct->find_ip_port_ssrc(
                             header_ip->saddr,htons(header_udp->source) & rtp_port_mask,
-                            get_ssrc(data,htons(header_udp->dest) & 1), //is_rtcp?
+                            get_ssrc(data,is_rtcp),
                             &idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
                         ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
