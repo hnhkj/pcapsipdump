@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 		"Usage: pcapsipdump [-fpU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level] [-R filter]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
-		" -R   RTP filter. Possible values: 'all' (default), 'rtpevent', 't38', or 'none'.\n"
+		" -R   RTP filter. Possible values: 'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.\n"
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
 		"      but you can use partitially written file anytime, it will be consistent.\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
