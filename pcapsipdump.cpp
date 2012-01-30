@@ -52,7 +52,7 @@
 int get_sip_peername(char *data, int data_len, const char *tag, char *caller, int caller_len);
 int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port);
 char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long *gettaglen);
-uint32_t get_ssrc (void *ip_packet_data);
+uint32_t get_ssrc (void *ip_packet_data, bool is_rtcp);
 #ifndef _GNU_SOURCE
 void *memmem(const void* haystack, size_t hl, const void* needle, size_t nl);
 #endif
@@ -72,6 +72,11 @@ void sigterm_handler(int param)
     ct->do_cleanup(0);
     exit(1);
 }
+
+#define RTPSAVE_NONE 0
+#define RTPSAVE_RTP 1
+#define RTPSAVE_RTP_RTCP 2
+#define RTPSAVE_RTPEVENT 3
 
 int main(int argc, char *argv[])
 {
@@ -94,7 +99,7 @@ int main(int argc, char *argv[])
     int opt_promisc=1;
     int opt_packetbuffered=0;
     int opt_t38only=0;
-    int opt_save_rtp=1;
+    int opt_rtpsave=RTPSAVE_RTP_RTCP;
     int verbosity=0;
     bool number_filter_matched=false;
 #ifdef USE_REGEXP
@@ -132,13 +137,16 @@ int main(int argc, char *argv[])
                 break;
             case 'R':
                 if (strcasecmp(optarg,"none")==0){
-                    opt_save_rtp=0;
+                    opt_rtpsave=RTPSAVE_NONE;
                 }else if (strcasecmp(optarg,"rtpevent")==0){
-                    opt_save_rtp=2;
+                    opt_rtpsave=RTPSAVE_RTPEVENT;
                 }else if (strcasecmp(optarg,"t38")==0){
                     opt_t38only=1;
-                }else if (strcasecmp(optarg,"all")==0){
-                    opt_save_rtp=1;
+                }else if (strcasecmp(optarg,"all")==0 ||
+                          strcasecmp(optarg,"rtp+rtcp")==0){
+                    opt_rtpsave=RTPSAVE_RTP_RTCP;
+                }else if (strcasecmp(optarg,"rtp")==0){
+                    opt_rtpsave=RTPSAVE_RTP;
                 }else{
                     printf("Unrecognized RTP filter specification: '%s'\n",optarg);
 	            return 1;
@@ -164,7 +172,7 @@ int main(int argc, char *argv[])
                 break;
         }
     }
-    
+
     // allow interface to be specified without '-i' option - for sake of compatibility
     if (optind < argc) {
 	ifname = argv[optind];
@@ -280,23 +288,39 @@ int main(int argc, char *argv[])
                 int idx_leg=0;
                 int idx_rtp=0;
                 int save_this_rtp_packet=0;
+                uint16_t rtp_port_mask=0xffff;
 
                 header_udp=(udphdr *)((char*)header_ip+sizeof(*header_ip));
                 data=(char *)header_udp+sizeof(*header_udp);
                 datalen=pkt_header->len-((unsigned long)data-(unsigned long)pkt_data);
 
-                if ((opt_save_rtp==1) ||
-                    (opt_save_rtp==2 && datalen==18 && (data[0]&0xff) == 0x80 && (data[1]&0x7d) == 0x65 )){
+                if (opt_rtpsave==RTPSAVE_RTP){
                     save_this_rtp_packet=1;
+                }else if (opt_rtpsave==RTPSAVE_RTP_RTCP){
+                    save_this_rtp_packet=1;
+                    rtp_port_mask=0xfffe;
+                }else if (opt_rtpsave==RTPSAVE_RTPEVENT &&
+                           datalen==18 && (data[0]&0xff) == 0x80 && (data[1]&0x7d) == 0x65){
+                    save_this_rtp_packet=1;
+                }else{
+                    save_this_rtp_packet=0;
                 }
 
-                if (save_this_rtp_packet && ct->find_ip_port_ssrc(header_ip->daddr,htons(header_udp->dest),get_ssrc(data),&idx_leg,&idx_rtp)){
+                if (save_this_rtp_packet &&
+                        ct->find_ip_port_ssrc(
+                            header_ip->daddr,htons(header_udp->dest) & rtp_port_mask,
+                            get_ssrc(data,htons(header_udp->dest) & 1), //is_rtcp?
+                            &idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
                         ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
                         pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
                         if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx_leg].f_pcap);}
                     }
-                }else if (save_this_rtp_packet && ct->find_ip_port_ssrc(header_ip->saddr,htons(header_udp->source),get_ssrc(data),&idx_leg,&idx_rtp)){
+                }else if (save_this_rtp_packet &&
+                        ct->find_ip_port_ssrc(
+                            header_ip->saddr,htons(header_udp->source) & rtp_port_mask,
+                            get_ssrc(data,htons(header_udp->dest) & 1), //is_rtcp?
+                            &idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
                         ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
                         pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
@@ -405,7 +429,7 @@ int main(int argc, char *argv[])
 			char st1[16];
 			char st2[16];
 			struct in_addr in;
-		    
+
 			in.s_addr=header_ip->saddr;
 			strcpy(st1,inet_ntoa(in));
 			in.s_addr=header_ip->daddr;
@@ -496,8 +520,12 @@ char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long
     return rc;
 }
 
-inline uint32_t get_ssrc (void *udp_packet_data_pointer){
-    return ntohl(*(uint32_t*)((uint8_t*)udp_packet_data_pointer+8));
+inline uint32_t get_ssrc (void *udp_packet_data_pointer, bool is_rtcp){
+    if (is_rtcp){
+        return ntohl(*(uint32_t*)((uint8_t*)udp_packet_data_pointer+4));
+    }else{
+        return ntohl(*(uint32_t*)((uint8_t*)udp_packet_data_pointer+8));
+    }
 }
 
 #ifndef _GNU_SOURCE
