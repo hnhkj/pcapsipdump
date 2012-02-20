@@ -17,9 +17,7 @@
 
     ---
 
-    You can send your updates, patches and suggestions on this software
-    to it's original author, Andrew Chernyak (nording@yandex.ru)
-    This would be appreciated, but not required.
+    Project's home: http://pcapsipdump.sf.net/
 */
 
 #ifdef sparc
@@ -188,6 +186,9 @@ int main(int argc, char *argv[])
 		"      but you can use partitially written file anytime, it will be consistent.\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
 		" -n   Number-filter. Only calls to/from specified number will be recorded\n"
+#ifdef USE_REGEXP
+		"      Argument is regular expression. See 'man 7 regex' for details\n"
+#endif
 		" -t   T.38-filter. Only calls, containing T.38 payload indicated in SDP will be recorded\n"
 		,PCAPSIPDUMP_VERSION);
 	return 1;

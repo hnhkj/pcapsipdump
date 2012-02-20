@@ -17,9 +17,7 @@
 
     ---
 
-    You can send your updates, patches and suggestions on this software
-    to it's original author, Andrew Chernyak (nording@yandex.ru)
-    This would be appreciated, but not required.
+    Project's home: http://pcapsipdump.sf.net/
 */
 
 #include <pcap.h>

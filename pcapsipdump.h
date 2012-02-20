@@ -21,12 +21,10 @@
 
     ---
 
-    You can send your updates, patches and suggestions on this software
-    to it's original author, Andrew Chernyak (nording@yandex.ru)
-    This would be appreciated, but not required.
+    Project's home: http://pcapsipdump.sf.net/
 */
 
-#define PCAPSIPDUMP_VERSION "0.1.4-trunk"
+#define PCAPSIPDUMP_VERSION "0.2-trunk"
 
 struct iphdr {
 #if defined(__LITTLE_ENDIAN)

@@ -1,5 +1,11 @@
+------------------- pcapsipdump 0.2 --------------------------------------------
+Mon Feb 20 07:50:55 PST 2012
+        * Added option to record RTCP as well as RTP
+        * Fix crash for non-RFC compliant (LF-terminated) SIP-requests
+        * Add debian-specific initscript
+
 Tue Oct 18 01:24:24 PDT 2011
-        * Add regexp-based number matching (to use, compile as following:
+        * Add regexp-based number matching. To use, compile as following:
           make DEFS=-DUSE_REGEXP
 
 Wed Aug 31 04:05:41 PDT 2011
