@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
                 }else if (opt_rtpsave==RTPSAVE_RTP_RTCP){
                     save_this_rtp_packet=1;
                     rtp_port_mask=0xfffe;
-                    is_rtcp=(htons(header_udp->src) & 1) && (htons(header_udp->dest) & 1);
+                    is_rtcp=(htons(header_udp->source) & 1) && (htons(header_udp->dest) & 1);
                 }else if (opt_rtpsave==RTPSAVE_RTPEVENT &&
                            datalen==18 && (data[0]&0xff) == 0x80 && (data[1]&0x7d) == 0x65){
                     save_this_rtp_packet=1;
