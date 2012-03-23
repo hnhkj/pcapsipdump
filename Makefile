@@ -26,3 +26,10 @@ install:
 	install redhat/pcapsipdump.sysconfig ${DESTDIR}/etc/sysconfig/pcapsipdump
 	mkdir -p ${DESTDIR}/var/spool/pcapsipdump
 	chmod 0700 ${DESTDIR}/var/spool/pcapsipdump
+
+install-debian:
+	install pcapsipdump ${DESTDIR}/usr/sbin/pcapsipdump
+	install debian/pcapsipdump.init ${DESTDIR}/etc/init.d/pcapsipdump
+	install debian/pcapsipdump.default ${DESTDIR}/etc/default/pcapsipdump
+	mkdir -p ${DESTDIR}/var/spool/pcapsipdump
+	chmod 0700 ${DESTDIR}/var/spool/pcapsipdump
