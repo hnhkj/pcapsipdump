@@ -99,6 +99,8 @@ int main(int argc, char *argv[])
     int opt_t38only=0;
     int opt_rtpsave=RTPSAVE_RTP_RTCP;
     int verbosity=0;
+    int opt_call_skip_n=1; /* By default, record every first call, i.e. record all */
+    int call_skip_cnt=1;
     bool number_filter_matched=false;
 #ifdef USE_REGEXP
     regex_t number_filter;
@@ -115,7 +117,7 @@ int main(int argc, char *argv[])
     while(1) {
         char c;
 
-        c = getopt (argc, argv, "i:r:d:v:n:R:fpUt");
+        c = getopt (argc, argv, "i:r:d:v:n:R:l:fpUt");
         if (c == -1)
             break;
 
@@ -150,6 +152,12 @@ int main(int argc, char *argv[])
 	            return 1;
                 }
                 break;
+            case 'l':
+                opt_call_skip_n=atoi(optarg);
+                if (opt_call_skip_n<1){
+        	    fprintf(stderr, "Invalid option '-l %s'. Argument should be positive integer.\n", optarg);
+        	    return(1);
+                }
             case 't':
                 opt_t38only=1;
                 break;
@@ -178,18 +186,26 @@ int main(int argc, char *argv[])
 
     if ((fname==NULL)&&(ifname==NULL)){
 	printf( "pcapsipdump version %s\n"
-		"Usage: pcapsipdump [-fpU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level] [-R filter]\n"
+		"Usage: pcapsipdump [-fpUt] [-i <interface> | -r <file>] [-d <working directory>]\n"
+                "                   [-v level] [-R filter] [-n filter] [-l filter]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
-		" -R   RTP filter. Possible values: 'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.\n"
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
 		"      but you can use partitially written file anytime, it will be consistent.\n"
+		" -t   T.38-filter. Only calls, containing T.38 payload indicated in SDP will be recorded.\n"
+		" -i   Spevify network interface name (i.e. eth0, em1, ppp0, etc).\n"
+		" -r   Read from .pcap file instead of network interface.\n"
+		" -d   Set directory, where captured files will be stored.\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
+		" -R   RTP filter. Specifies what kind of RTP information to include in capture:\n"
+                "      'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.\n"
 		" -n   Number-filter. Only calls to/from specified number will be recorded\n"
 #ifdef USE_REGEXP
-		"      Argument is regular expression. See 'man 7 regex' for details\n"
+		"      Argument is regular expression. See 'man 7 regex' for details.\n"
+#else
+		"      Argument is string. Recompile as 'make DEFS=-DUSE_REGEXP' to get regexp support.\n"
 #endif
-		" -t   T.38-filter. Only calls, containing T.38 payload indicated in SDP will be recorded\n"
+                " -l   Record only each N-th call (i.e. '-l 3' = record only each third call)\n"
 		,PCAPSIPDUMP_VERSION);
 	return 1;
     }
@@ -371,28 +387,37 @@ int main(int argc, char *argv[])
 			    printf("Too many simultaneous calls. Ran out of call table space!\n");
 			}else{
 			    if ((strcmp(sip_method,"INVITE")==0)||(strcmp(sip_method,"OPTIONS")==0)||(strcmp(sip_method,"REGISTER")==0)){
-				struct tm *t;
-				t=localtime(&pkt_header->ts.tv_sec);
-				sprintf(str2,"%04d%02d%02d",
-					t->tm_year+1900,t->tm_mon+1,t->tm_mday);
-				mkdir(str2,0700);
-				sprintf(str2,"%04d%02d%02d/%02d",
-					t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour);
-				mkdir(str2,0700);
-				sprintf(str2,"%04d%02d%02d/%02d/%04d%02d%02d-%02d%02d%02d-%s-%s",
-					t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,
-					t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,caller,called);
-				memcpy(str1,s,l);
-				str1[l]='\0';
-				strcat(str2,"-");
-				strcat(str2,str1);
-				strcat(str2,".raw");
-				ct->table[idx].f=NULL;
-				str1[l]='\0';
-				*strstr(str2,".raw")='\0';
-				strcat(str2,".pcap");
-				ct->table[idx].f_pcap=pcap_dump_open(handle,str2);
-				strncpy(ct->table[idx].fn_pcap,str2,sizeof(ct->table[idx].fn_pcap));
+                                if ((--call_skip_cnt)>0){
+                                    if (verbosity>=3){
+                                        printf("Skipping %s call from %s to %s \n",sip_method,caller,called);
+                                    }
+                                    ct->table[idx].f=NULL;
+                                    ct->table[idx].f_pcap=NULL;
+                                }else{
+                                    call_skip_cnt=opt_call_skip_n;
+                                    struct tm *t;
+                                    t=localtime(&pkt_header->ts.tv_sec);
+                                    sprintf(str2,"%04d%02d%02d",
+                                    	t->tm_year+1900,t->tm_mon+1,t->tm_mday);
+                                    mkdir(str2,0700);
+                                    sprintf(str2,"%04d%02d%02d/%02d",
+                                    	t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour);
+                                    mkdir(str2,0700);
+                                    sprintf(str2,"%04d%02d%02d/%02d/%04d%02d%02d-%02d%02d%02d-%s-%s",
+                                        t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,
+                                        t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,caller,called);
+                                    memcpy(str1,s,l);
+                                    str1[l]='\0';
+                                    strcat(str2,"-");
+                                    strcat(str2,str1);
+                                    strcat(str2,".raw");
+                                    ct->table[idx].f=NULL;
+                                    str1[l]='\0';
+                                    *strstr(str2,".raw")='\0';
+                                    strcat(str2,".pcap");
+                                    ct->table[idx].f_pcap=pcap_dump_open(handle,str2);
+                                    strncpy(ct->table[idx].fn_pcap,str2,sizeof(ct->table[idx].fn_pcap));
+                                }
 			    }else{
 				if (verbosity>=2){
 				    printf("Unknown SIP method:'%s'!\n",sip_method);
