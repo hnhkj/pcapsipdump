@@ -158,6 +158,7 @@ int main(int argc, char *argv[])
         	    fprintf(stderr, "Invalid option '-l %s'. Argument should be positive integer.\n", optarg);
         	    return(1);
                 }
+                break;
             case 't':
                 opt_t38only=1;
                 break;
