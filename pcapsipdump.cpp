@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
         mask = 0;
 	handle = pcap_open_offline(fname, errbuf);
 	if (handle == NULL) {
-	    fprintf(stderr, "Couldn't open pcap file '%s': %s\n", ifname, errbuf);
+	    fprintf(stderr, "Couldn't open pcap file '%s': %s\n", fname, errbuf);
 	    return(2);
 	}
     }
