@@ -608,11 +608,8 @@ long long parse_size_string(char *s){
     result=0;
     multiplier[0]=0;
     sscanf (s,"%d%s",&result,multiplier);
-    for (i = 0; multiplier[i]; i++){
-        multiplier[i] = tolower(multiplier[i]);
-    }
     for (i = 0; multipliers[i].value>0; i++){
-        if (strcmp(multipliers[i].text,multiplier)==0){
+        if (strcasecmp(multipliers[i].text,multiplier)==0){
             result*=multipliers[i].value;
             return result;
         }
