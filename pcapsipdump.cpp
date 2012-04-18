@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
@@ -51,6 +52,7 @@ int get_sip_peername(char *data, int data_len, const char *tag, char *caller, in
 int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port);
 char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long *gettaglen);
 uint32_t get_ssrc (void *ip_packet_data, bool is_rtcp);
+long long parse_size_string(char *s);
 #ifndef _GNU_SOURCE
 void *memmem(const void* haystack, size_t hl, const void* needle, size_t nl);
 #endif
@@ -86,8 +88,6 @@ int main(int argc, char *argv[])
     char errbuf[PCAP_ERRBUF_SIZE];/* Error string */
     struct bpf_program fp;/* The compiled filter */
     char filter_exp[] = "udp";/* The filter expression */
-    bpf_u_int32 mask;/* Our netmask */
-    bpf_u_int32 net;/* Our IP */
     struct pcap_pkthdr *pkt_header; /* The header that pcap gives us */
     const u_char *pkt_data; /* The actual packet */
     unsigned long last_cleanup=0;
@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
     int verbosity=0;
     int opt_call_skip_n=1; /* By default, record every first call, i.e. record all */
     int call_skip_cnt=1;
+    int opt_pcap_buffer_size=0; /* Operating system capture buffer size, a.k.a. libpcap ring buffer size */
     bool number_filter_matched=false;
 #ifdef USE_REGEXP
     regex_t number_filter;
@@ -117,7 +118,7 @@ int main(int argc, char *argv[])
     while(1) {
         char c;
 
-        c = getopt (argc, argv, "i:r:d:v:n:R:l:fpUt");
+        c = getopt (argc, argv, "i:r:d:v:n:R:l:B:fpUt");
         if (c == -1)
             break;
 
@@ -159,6 +160,15 @@ int main(int argc, char *argv[])
         	    return(1);
                 }
                 break;
+            case 'B':
+                opt_pcap_buffer_size = parse_size_string(optarg);
+                if (opt_pcap_buffer_size < 1){
+        	    fprintf(stderr, "Invalid option '-B %s'.\n"
+                                    "  Argument should be positive integer with optional quantifier.\n"
+                                    "  e.g.: '-B 32768' or '-B 10KB' or '-b 512MiB', etc.\n", optarg);
+        	    return(1);
+                }
+                break;
             case 't':
                 opt_t38only=1;
                 break;
@@ -188,18 +198,21 @@ int main(int argc, char *argv[])
     if ((fname==NULL)&&(ifname==NULL)){
 	printf( "pcapsipdump version %s\n"
 		"Usage: pcapsipdump [-fpUt] [-i <interface> | -r <file>] [-d <working directory>]\n"
-                "                   [-v level] [-R filter] [-n filter] [-l filter]\n"
+                "                   [-v level] [-R filter] [-n filter] [-l filter] [-B size]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
 		"      but you can use partitially written file anytime, it will be consistent.\n"
 		" -t   T.38-filter. Only calls, containing T.38 payload indicated in SDP will be recorded.\n"
-		" -i   Spevify network interface name (i.e. eth0, em1, ppp0, etc).\n"
+		" -i   Specify network interface name (i.e. eth0, em1, ppp0, etc).\n"
 		" -r   Read from .pcap file instead of network interface.\n"
 		" -d   Set directory, where captured files will be stored.\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
+		" -B   Set the operating system capture buffer size, a.k.a. ring buffer size.\n"
+		"      This can be expressed in bytes/KB(*1000)/KiB(*1024)/MB/MiB/GB/GiB. ex.: '-B 64MiB'\n"
+		"      Set this to few MiB or more to avoid packets dropped by kernel.\n"
 		" -R   RTP filter. Specifies what kind of RTP information to include in capture:\n"
-                "      'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.\n"
+		"      'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.\n"
 		" -n   Number-filter. Only calls to/from specified number will be recorded\n"
 #ifdef USE_REGEXP
 		"      Argument is regular expression. See 'man 7 regex' for details.\n"
@@ -219,22 +232,34 @@ int main(int argc, char *argv[])
     signal(SIGTERM,sigterm_handler);
 
     if (ifname){
-	printf("Capturing on interface: %s\n", ifname);
-	/* Find the properties for interface */
-	if (pcap_lookupnet(ifname, &net, &mask, errbuf) == -1) {
-	    fprintf(stderr, "Couldn't get netmask for interface %s: %s\n", ifname, errbuf);
-	    net = 0;
-	    mask = 0;
-	}
-	handle = pcap_open_live(ifname, 1600, opt_promisc, 1000, errbuf);
-	if (handle == NULL) {
-	    fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, errbuf);
-	    return(2);
-	}
+        printf("Capturing on interface: %s\n", ifname);
+
+        if((handle = pcap_create(ifname, errbuf)) == NULL){
+            fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, pcap_geterr(handle));
+            return(2);
+        }
+        if(pcap_set_snaplen(handle, 1600) ||
+           pcap_set_promisc(handle, opt_promisc) ||
+           pcap_set_timeout(handle, 1000)){
+            fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, pcap_geterr(handle));
+            return(2);
+        }
+        if (opt_pcap_buffer_size > 0){
+            /* setting pcap_set_buffer_size to bigger values helps to deal with packet drops under high load
+               libpcap > 1.0.0 if required for pcap_set_buffer_size
+               for libpcap < 1.0.0 instead, this should be controled by /proc/sys/net/core/rmem_default
+            */
+            if(pcap_set_buffer_size(handle, opt_pcap_buffer_size)){
+                fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, pcap_geterr(handle));
+                return(2);
+            }
+        }
+        if(pcap_activate(handle)){
+            fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, pcap_geterr(handle));
+            return(2);
+        }
     }else{
-	printf("Reading file: %s\n", fname);
-        net = 0;
-        mask = 0;
+        printf("Reading file: %s\n", fname);
 	handle = pcap_open_offline(fname, errbuf);
 	if (handle == NULL) {
 	    fprintf(stderr, "Couldn't open pcap file '%s': %s\n", fname, errbuf);
@@ -245,7 +270,7 @@ int main(int argc, char *argv[])
     chdir(opt_chdir);
 
     /* Compile and apply the filter */
-    if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
+    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
 	fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
 	return(2);
     }
@@ -555,6 +580,46 @@ inline uint32_t get_ssrc (void *udp_packet_data_pointer, bool is_rtcp){
     }else{
         return ntohl(*(uint32_t*)((uint8_t*)udp_packet_data_pointer+8));
     }
+}
+
+long long parse_size_string(char *s){
+    char multiplier[32];
+    long long result;
+    int i;
+
+    struct multiplier_element {
+        char text[32];
+        unsigned long value;
+    } multipliers[] = {
+        "",1,
+        "b",1,
+        "byte",1,
+        "bytes",1,
+        "kb",1000,
+        "kib",1024,
+        "mb",1000*1000,
+        "mib",1024*1024,
+        "gb",1000*1000*1000,
+        "gib",1024*1024*1024,
+        "",0,
+    };
+
+    if (strlen(s)>=32){
+        return 0;
+    }
+    result=0;
+    multiplier[0]=0;
+    sscanf (s,"%d%s",&result,multiplier);
+    for (i = 0; multiplier[i]; i++){
+        multiplier[i] = tolower(multiplier[i]);
+    }
+    for (i = 0; multipliers[i].value>0; i++){
+        if (strcmp(multipliers[i].text,multiplier)==0){
+            result*=multipliers[i].value;
+            return result;
+        }
+    }
+    return 0;
 }
 
 #ifndef _GNU_SOURCE
