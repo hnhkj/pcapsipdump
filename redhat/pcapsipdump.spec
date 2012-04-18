@@ -2,7 +2,7 @@ Summary: PCAP SIP Dump tool
 Name: pcapsipdump
 Distribution: RedHat
 Version: 0.2
-Release: 1
+Release: 2
 License: GPL v2
 Group: Utilities/System
 Vendor: pcapsipdump.sf.net

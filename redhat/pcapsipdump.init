@@ -18,10 +18,19 @@
 . /etc/sysconfig/pcapsipdump
 
 prog="pcapsipdump"
+pid=`pidofproc $prog`
 
 start() {
 	echo -n $"Starting $prog: "	
-	daemon pcapsipdump -f -d $SPOOLDIR -i $DEVICE
+	
+	if [[ -n $pid ]]; then
+		echo -n "already running ($pid)"
+		success
+		echo
+		return 0;
+	fi
+	
+	daemon $prog -d $SPOOLDIR -i $DEVICE $OTHER_OPTS
 	RETVAL=$?
 	echo
 	return $RETVAL
