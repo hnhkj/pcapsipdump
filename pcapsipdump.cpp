@@ -234,13 +234,11 @@ int main(int argc, char *argv[])
     if (ifname){
         printf("Capturing on interface: %s\n", ifname);
 
-        if((handle = pcap_create(ifname, errbuf)) == NULL){
-            fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, pcap_geterr(handle));
-            return(2);
-        }
-        if(pcap_set_snaplen(handle, 1600) ||
-           pcap_set_promisc(handle, opt_promisc) ||
-           pcap_set_timeout(handle, 1000)){
+        handle = pcap_create(ifname,errbuf);
+        if ((handle == NULL) ||
+             pcap_set_snaplen(handle,1600) ||
+             pcap_set_promisc(handle,opt_promisc) ||
+             pcap_set_timeout(handle,1000)){
             fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, pcap_geterr(handle));
             return(2);
         }
