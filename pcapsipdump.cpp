@@ -423,10 +423,10 @@ int main(int argc, char *argv[])
                                     t=localtime(&pkt_header->ts.tv_sec);
                                     sprintf(str2,"%04d%02d%02d",
                                     	t->tm_year+1900,t->tm_mon+1,t->tm_mday);
-                                    mkdir(str2,0700);
+                                    mkdir(str2,0777);
                                     sprintf(str2,"%04d%02d%02d/%02d",
                                     	t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour);
-                                    mkdir(str2,0700);
+                                    mkdir(str2,0777);
                                     sprintf(str2,"%04d%02d%02d/%02d/%04d%02d%02d-%02d%02d%02d-%s-%s",
                                         t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,
                                         t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,caller,called);

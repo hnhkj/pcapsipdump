@@ -1,3 +1,16 @@
+Fri Apr 20 01:02:21 PDT 2012
+        * Remove hard-coded directory creation permissions:
+          User should use "umask" before running pcapsipdump to instead.
+
+Wed Apr 18 13:39:35 2012 UTC
+        * Add option '-B' to specifu capture buffer size:
+          This helps to cope with packet loss under high load
+        * Add missing 'break' statement. This fixes bug of
+          unexpected triggering of T.38 filter
+
+Tue Apr 3 08:28:38 2012 UTC
+        * Introduce '-l' option to skip some fraction of calls
+
 ------------------- pcapsipdump 0.2 --------------------------------------------
 Mon Feb 20 07:50:55 PST 2012
         * Added option to record RTCP as well as RTP
