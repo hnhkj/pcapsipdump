@@ -77,6 +77,7 @@ void sigterm_handler(int param)
 #define RTPSAVE_RTP 1
 #define RTPSAVE_RTP_RTCP 2
 #define RTPSAVE_RTPEVENT 3
+#define MAX_PCAP_FILTER_EXPRESSION 1024
 
 int main(int argc, char *argv[])
 {
@@ -87,7 +88,7 @@ int main(int argc, char *argv[])
     char *fname;/* pcap file to read on */
     char errbuf[PCAP_ERRBUF_SIZE];/* Error string */
     struct bpf_program fp;/* The compiled filter */
-    char filter_exp[] = "udp";/* The filter expression */
+    char filter_exp[MAX_PCAP_FILTER_EXPRESSION] = "udp";/* The filter expression */
     struct pcap_pkthdr *pkt_header; /* The header that pcap gives us */
     const u_char *pkt_data; /* The actual packet */
     unsigned long last_cleanup=0;
@@ -150,23 +151,23 @@ int main(int argc, char *argv[])
                     opt_rtpsave=RTPSAVE_RTP;
                 }else{
                     printf("Unrecognized RTP filter specification: '%s'\n",optarg);
-	            return 1;
+                    return 1;
                 }
                 break;
             case 'l':
                 opt_call_skip_n=atoi(optarg);
                 if (opt_call_skip_n<1){
-        	    fprintf(stderr, "Invalid option '-l %s'. Argument should be positive integer.\n", optarg);
-        	    return(1);
+                    fprintf(stderr, "Invalid option '-l %s'. Argument should be positive integer.\n", optarg);
+                    return(1);
                 }
                 break;
             case 'B':
                 opt_pcap_buffer_size = parse_size_string(optarg);
                 if (opt_pcap_buffer_size < 1){
-        	    fprintf(stderr, "Invalid option '-B %s'.\n"
+                    fprintf(stderr, "Invalid option '-B %s'.\n"
                                     "  Argument should be positive integer with optional quantifier.\n"
                                     "  e.g.: '-B 32768' or '-B 10KB' or '-b 512MiB', etc.\n", optarg);
-        	    return(1);
+                    return(1);
                 }
                 break;
             case 't':
@@ -185,20 +186,27 @@ int main(int argc, char *argv[])
                 opt_promisc=0;
                 break;
             case 'U':
-		opt_packetbuffered=1;
+                opt_packetbuffered=1;
                 break;
         }
     }
 
-    // allow interface to be specified without '-i' option - for sake of compatibility
+    // everything that is left unparsed in argument string is pcap filter expression
     if (optind < argc) {
-	ifname = argv[optind];
+        filter_exp[0]='\0';
+        while (optind < argc) {
+            if (filter_exp[0]!='\0'){
+                strcat(filter_exp," ");
+            }
+            strcat(filter_exp,argv[optind++]);
+        }
     }
 
     if ((fname==NULL)&&(ifname==NULL)){
 	printf( "pcapsipdump version %s\n"
 		"Usage: pcapsipdump [-fpUt] [-i <interface> | -r <file>] [-d <working directory>]\n"
                 "                   [-v level] [-R filter] [-n filter] [-l filter] [-B size]\n"
+                "                   [expression]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
@@ -220,6 +228,7 @@ int main(int argc, char *argv[])
 		"      Argument is string. Recompile as 'make DEFS=-DUSE_REGEXP' to get regexp support.\n"
 #endif
                 " -l   Record only each N-th call (i.e. '-l 3' = record only each third call)\n"
+                " For the expression syntax, see 'man 7 pcap-filter'\n"
 		,PCAPSIPDUMP_VERSION);
 	return 1;
     }
@@ -230,6 +239,10 @@ int main(int argc, char *argv[])
     }
     signal(SIGINT,sigint_handler);
     signal(SIGTERM,sigterm_handler);
+
+    if (verbosity>=3){
+        printf("Using pcap filter: '%s'\n",filter_exp);
+    }
 
     if (ifname){
         printf("Capturing on interface: %s\n", ifname);
@@ -258,28 +271,28 @@ int main(int argc, char *argv[])
         }
     }else{
         printf("Reading file: %s\n", fname);
-	handle = pcap_open_offline(fname, errbuf);
-	if (handle == NULL) {
-	    fprintf(stderr, "Couldn't open pcap file '%s': %s\n", fname, errbuf);
-	    return(2);
-	}
+        handle = pcap_open_offline(fname, errbuf);
+        if (handle == NULL) {
+            fprintf(stderr, "Couldn't open pcap file '%s': %s\n", fname, errbuf);
+            return(2);
+        }
     }
 
     chdir(opt_chdir);
 
     /* Compile and apply the filter */
     if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
-	fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
-	return(2);
+        fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        return(2);
     }
     if (pcap_setfilter(handle, &fp) == -1) {
-	fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
-	return(2);
+        fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        return(2);
     }
 
     if (opt_fork){
-	// daemonize
-	if (fork()) exit(0);
+        // daemonize
+        if (fork()) exit(0);
     }
 
     {

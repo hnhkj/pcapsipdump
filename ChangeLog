@@ -1,3 +1,7 @@
+Fri May 18 01:25:08 PDT 2012
+        * add option to specify pcap filter expression (BPF)
+          Use with caution - it applies to both signalling and RTP.
+
 Fri Apr 20 01:02:21 PDT 2012
         * Remove hard-coded directory creation permissions:
           User should use "umask" before running pcapsipdump to instead.
