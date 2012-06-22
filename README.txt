@@ -9,7 +9,7 @@ Usage: pcapsipdump [-fpU] [-i <interface>] [-r <file>] [-d <working directory>] 
  -v   Set verbosity level (higher is more verbose).
  -n   Number-filter. Only calls to/from specified number will be recorded
       (to use regular expressions here, compile with: 'make DEFS=-DUSE_REGEXP')
- -t   T.38-filter. Only calls, containing T.38 payload indicated in SDP will be recorded
+ -t   T.38-filter. (Deprecated. Use '-R t38' instead.)
 
 pcapsipdump is a tool for dumping SIP sessions (+RTP
 traffic, if available) to disk in a fashion similar
