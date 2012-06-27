@@ -51,6 +51,9 @@ int calltable::add(
 	}
     }
     if (!found_empty){
+	if(table_size>=(calltable_max-1)){
+	    return -1;
+	}
 	idx=table_size;
 	table_size++;
     }
@@ -60,6 +63,8 @@ int calltable::add(
     memcpy(table[idx].call_id,call_id,MIN(call_id_len,32));
     table[idx].call_id_len=call_id_len;
     table[idx].ip_n=0;
+    table[idx].f=NULL;
+    table[idx].f_pcap=NULL;
     table[idx].last_packet_time=time;
     global_last_packet_time=time;
     return idx;
