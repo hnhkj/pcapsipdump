@@ -1,2 +1,2 @@
 #include <pcap.h>
-int main(void){return 0;}
+int main(void){pcap_set_snaplen(NULL,100);return 0;}
