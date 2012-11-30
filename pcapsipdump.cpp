@@ -338,7 +338,8 @@ int main(int argc, char *argv[])
 		last_cleanup=pkt_header->ts.tv_sec;
 	    }
 	    header_ip=(iphdr *)((char*)pkt_data+offset_to_ip);
-	    if (header_ip->protocol==17){//UPPROTO_UDP=17
+	    if ( pkt_header->caplen >= (offset_to_ip+sizeof(struct udphdr)) &&
+	         header_ip->protocol == 17){//UPPROTO_UDP=17
                 int idx_leg=0;
                 int idx_rtp=0;
                 int save_this_rtp_packet=0;
