@@ -211,7 +211,6 @@ int main(int argc, char *argv[])
 		" -p   Do not put the interface into promiscuous mode.\n"
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
 		"      but you can use partitially written file anytime, it will be consistent.\n"
-		" -t   T.38-filter. Only calls, containing T.38 payload indicated in SDP will be recorded.\n"
 		" -i   Specify network interface name (i.e. eth0, em1, ppp0, etc).\n"
 		" -r   Read from .pcap file instead of network interface.\n"
 		" -d   Set directory, where captured files will be stored.\n"

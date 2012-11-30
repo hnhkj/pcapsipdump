@@ -1,15 +1,26 @@
 pcapsipdump version 0.2-trunk
 
-Usage: pcapsipdump [-fpU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level] [-R filter]
+Usage: pcapsipdump [-fpUt] [-i <interface> | -r <file>] [-d <working directory>]
+                   [-v level] [-R filter] [-n filter] [-l filter] [-B size]
+                   [expression]
  -f   Do not fork or detach from controlling terminal.
  -p   Do not put the interface into promiscuous mode.
- -R   RTP filter. Possible values: 'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.
  -U   Make .pcap files writing 'packet-buffered' - slower method,
       but you can use partitially written file anytime, it will be consistent.
+ -i   Specify network interface name (i.e. eth0, em1, ppp0, etc).
+ -r   Read from .pcap file instead of network interface.
+ -d   Set directory, where captured files will be stored.
  -v   Set verbosity level (higher is more verbose).
+ -B   Set the operating system capture buffer size, a.k.a. ring buffer size.
+      This can be expressed in bytes/KB(*1000)/KiB(*1024)/MB/MiB/GB/GiB. ex.: '-B 64MiB'
+      Set this to few MiB or more to avoid packets dropped by kernel.
+ -R   RTP filter. Specifies what kind of RTP information to include in capture:
+      'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.
  -n   Number-filter. Only calls to/from specified number will be recorded
-      (to use regular expressions here, compile with: 'make DEFS=-DUSE_REGEXP')
- -t   T.38-filter. (Deprecated. Use '-R t38' instead.)
+      Argument is string. Recompile as 'make DEFS=-DUSE_REGEXP' to get regexp support.
+ -l   Record only each N-th call (i.e. '-l 3' = record only each third call)
+ For the expression syntax, see 'man 7 pcap-filter'
+
 
 pcapsipdump is a tool for dumping SIP sessions (+RTP
 traffic, if available) to disk in a fashion similar
