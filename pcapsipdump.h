@@ -26,6 +26,14 @@
 
 #define PCAPSIPDUMP_VERSION "0.2-trunk"
 
+#if !defined(PCAP_NETMASK_UNKNOWN)
+/*
+ * Value to pass to pcap_compile() as the netmask if you don't know what
+ * the netmask is.
+ */
+#define PCAP_NETMASK_UNKNOWN    0xffffffff
+#endif
+
 struct iphdr {
 #if defined(__LITTLE_ENDIAN)
 	uint8_t	ihl:4,

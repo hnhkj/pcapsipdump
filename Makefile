@@ -13,10 +13,6 @@ pcapsipdump: make-checks pcapsipdump.cpp calltable.cpp calltable.h
 pcapsipdump-debug: make-checks pcapsipdump.cpp calltable.cpp calltable.h
 	$(CC) $(CPPFLAGS) $(LDFLAGS) $(LIBS) $(DEFS) -ggdb pcapsipdump.cpp calltable.cpp -o pcapsipdump-debug
 
-tests: pcapsipdump
-	$(MAKE) -C tests/segfaults
-	$(MAKE) -C tests/performance
-
 clean:
 	rm -f pcapsipdump
 
