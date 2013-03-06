@@ -3,7 +3,7 @@ include make-checks/*.mk
 #uncommend next line for regex support
 #DEFS ?= -DUSE_REGEXP
 LIBS ?= -lpcap -lstdc++
-RELEASEFLAGS ?= -O3
+RELEASEFLAGS ?= -O3 -Wall
 
 all: pcapsipdump
 

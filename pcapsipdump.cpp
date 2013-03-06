@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
 	    char str1[1024],str2[1024];
 	    unsigned long datalen;
 	    unsigned long l;
-	    int idx;
+	    int idx=-1;
 
             if(res == 0)
                 /* Timeout elapsed */
@@ -485,7 +485,7 @@ int main(int argc, char *argv[])
 			}
 		    }
 
-		    if (ct->table[idx].f_pcap!=NULL){
+		    if ((idx>=0) && (ct->table[idx].f_pcap!=NULL)){
 			pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
 			if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
 		    }
@@ -602,17 +602,17 @@ long long parse_size_string(char *s){
         char text[32];
         unsigned long value;
     } multipliers[] = {
-        "",1,
-        "b",1,
-        "byte",1,
-        "bytes",1,
-        "kb",1000,
-        "kib",1024,
-        "mb",1000*1000,
-        "mib",1024*1024,
-        "gb",1000*1000*1000,
-        "gib",1024*1024*1024,
-        "",0,
+        {"",1},
+        {"b",1},
+        {"byte",1},
+        {"bytes",1},
+        {"kb",1000},
+        {"kib",1024},
+        {"mb",1000*1000},
+        {"mib",1024*1024},
+        {"gb",1000*1000*1000},
+        {"gib",1024*1024*1024},
+        {"",0}
     };
 
     if (strlen(s)>=32){
@@ -620,7 +620,7 @@ long long parse_size_string(char *s){
     }
     result=0;
     multiplier[0]=0;
-    sscanf (s,"%d%s",&result,multiplier);
+    sscanf (s,"%lld%s",&result,multiplier);
     for (i = 0; multipliers[i].value>0; i++){
         if (strcasecmp(multipliers[i].text,multiplier)==0){
             result*=multipliers[i].value;
