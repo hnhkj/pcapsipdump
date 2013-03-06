@@ -8,6 +8,6 @@ make-checks/libpcap:
 	  echo "Required library not found: pcap "; \
 	  echo "Please install it in your distribution-specific manner, e.g.:"; \
 	  echo " yum install libpcap libpcap-devel"; \
-	  echo " apt-get install libpcap libpcap-dev"; \
+	  echo " apt-get install tcpdump libpcap-dev"; \
 	  echo " cd ~ports/net/libpcap && make install"; \
 	  false)
