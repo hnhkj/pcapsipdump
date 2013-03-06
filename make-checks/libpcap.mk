@@ -1,5 +1,9 @@
-check-libpcap:
-	@$(CC) $(CPPFLAGS) $(LDFLAGS) -lpcap make-checks/check_libpcap.c -o /dev/null || (\
+CHECK_LIBPCAP = $(CXX) $(CXXFLAGS) $(LDFLAGS) -lpcap make-checks/libpcap.cpp -o make-checks/libpcap
+
+make-checks/libpcap:
+	@$(CHECK_LIBPCAP) || (\
+	  echo; \
+	  echo $(CHECK_LIBPCAP); \
 	  echo; \
 	  echo "Required library not found: pcap "; \
 	  echo "Please install it in your distribution-specific manner, e.g.:"; \

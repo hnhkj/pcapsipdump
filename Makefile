@@ -1,17 +1,17 @@
-include make-checks/*.mk
-
 #uncommend next line for regex support
 #DEFS ?= -DUSE_REGEXP
 LIBS ?= -lpcap -lstdc++
 RELEASEFLAGS ?= -O3 -Wall
 
-all: pcapsipdump
+all: make-checks/all pcapsipdump
 
-pcapsipdump: make-checks pcapsipdump.cpp calltable.cpp calltable.h
-	$(CC) $(RELEASEFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LIBS) $(DEFS) pcapsipdump.cpp calltable.cpp -o pcapsipdump
+include make-checks/*.mk
+
+pcapsipdump: pcapsipdump.cpp calltable.cpp calltable.h
+	$(CXX) $(RELEASEFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LIBS) $(DEFS) pcapsipdump.cpp calltable.cpp -o pcapsipdump
 
 pcapsipdump-debug: make-checks pcapsipdump.cpp calltable.cpp calltable.h
-	$(CC) $(CPPFLAGS) $(LDFLAGS) $(LIBS) $(DEFS) -ggdb pcapsipdump.cpp calltable.cpp -o pcapsipdump-debug
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LIBS) $(DEFS) -ggdb pcapsipdump.cpp calltable.cpp -o pcapsipdump-debug
 
 clean:
 	rm -f pcapsipdump
