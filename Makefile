@@ -8,10 +8,10 @@ all: make-checks/all pcapsipdump
 include make-checks/*.mk
 
 pcapsipdump: pcapsipdump.cpp calltable.cpp calltable.h
-	$(CXX) $(RELEASEFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LIBS) $(DEFS) pcapsipdump.cpp calltable.cpp -o pcapsipdump
+	$(CXX) $(RELEASEFLAGS) $(CXXFLAGS) $(LDFLAGS) $(DEFS) pcapsipdump.cpp calltable.cpp $(LIBS) -o pcapsipdump
 
 pcapsipdump-debug: make-checks pcapsipdump.cpp calltable.cpp calltable.h
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LIBS) $(DEFS) -ggdb pcapsipdump.cpp calltable.cpp -o pcapsipdump-debug
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFS) -ggdb pcapsipdump.cpp calltable.cpp $(LIBS) -o pcapsipdump-debug
 
 clean:
 	rm -f pcapsipdump

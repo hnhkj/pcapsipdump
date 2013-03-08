@@ -1,4 +1,4 @@
-CHECK_LIBPCAP = $(CXX) $(CXXFLAGS) $(LDFLAGS) -lpcap make-checks/libpcap.cpp -o make-checks/libpcap
+CHECK_LIBPCAP = $(CXX) $(CXXFLAGS) $(LDFLAGS) make-checks/libpcap.cpp -lpcap -o make-checks/libpcap
 
 make-checks/libpcap:
 	@$(CHECK_LIBPCAP) || (\

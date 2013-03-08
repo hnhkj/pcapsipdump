@@ -1,4 +1,4 @@
-CHECK_CXX = $(CXX) $(CXXFLAGS) $(LDFLAGS) -lstdc++ make-checks/cxx.cpp -o make-checks/cxx
+CHECK_CXX = $(CXX) $(CXXFLAGS) $(LDFLAGS) make-checks/cxx.cpp -lstdc++ -o make-checks/cxx
 
 make-checks/cxx:
 	@$(CHECK_CXX) || (\
