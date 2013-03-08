@@ -202,6 +202,11 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (chdir(opt_chdir)){
+        perror (opt_chdir);
+        return(2);
+    }
+
     if ((fname==NULL)&&(ifname==NULL)){
 	printf( "pcapsipdump version %s\n"
 		"Usage: pcapsipdump [-fpUt] [-i <interface> | -r <file>] [-d <working directory>]\n"
@@ -275,11 +280,6 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Couldn't open pcap file '%s': %s\n", fname, errbuf);
             return(2);
         }
-    }
-
-    if (chdir(opt_chdir)){
-        perror (opt_chdir);
-        return(2);
     }
 
     /* Compile and apply the filter */
