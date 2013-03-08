@@ -277,7 +277,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    chdir(opt_chdir);
+    if (chdir(opt_chdir)){
+        perror (opt_chdir);
+        return(2);
+    }
 
     /* Compile and apply the filter */
     if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
