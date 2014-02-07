@@ -79,6 +79,37 @@ void sigterm_handler(int param)
 #define RTPSAVE_RTPEVENT 3
 #define MAX_PCAP_FILTER_EXPRESSION 1024
 
+/* return 32-bit hash of source/dest IPv4 or IPv6 address based on IP header */
+uint32_t hsaddr(void *p) {
+    struct iphdr *header_ip = (iphdr*)p;
+    struct ipv6hdr *header_ipv6 = (ipv6hdr*)p;
+    if(header_ip->version == 4){
+        return header_ip->saddr;
+    }else{
+        // Ad-hoc 128bit -> 32bit hash function
+        return (uint32_t)(
+            (uint32_t)(header_ipv6->saddr.s6_addr32[0])+
+            (uint32_t)(header_ipv6->saddr.s6_addr32[1]*19)+
+            (uint32_t)(header_ipv6->saddr.s6_addr32[2]*37)+
+            (uint32_t)(header_ipv6->saddr.s6_addr32[3]*109));
+    }
+}
+
+uint32_t hdaddr(void *p) {
+    struct iphdr *header_ip = (iphdr*)p;
+    struct ipv6hdr *header_ipv6 = (ipv6hdr*)p;
+    if(header_ip->version == 4){
+        return header_ip->daddr;
+    }else{
+        // Ad-hoc 128bit -> 32bit hash function
+        return (uint32_t)(
+            (uint32_t)(header_ipv6->daddr.s6_addr32[0])+
+            (uint32_t)(header_ipv6->daddr.s6_addr32[1]*19)+
+            (uint32_t)(header_ipv6->daddr.s6_addr32[2]*37)+
+            (uint32_t)(header_ipv6->daddr.s6_addr32[3]*109));
+    }
+}
+
 int main(int argc, char *argv[])
 {
 
@@ -321,6 +352,7 @@ int main(int argc, char *argv[])
     while((res = pcap_next_ex( handle, &pkt_header, &pkt_data)) >= 0){
 	{
 	    struct iphdr *header_ip;
+	    struct ipv6hdr *header_ipv6;
 	    struct udphdr *header_udp;
 	    char *data;
 	    char *s;
@@ -339,16 +371,24 @@ int main(int argc, char *argv[])
 		}
 		last_cleanup=pkt_header->ts.tv_sec;
 	    }
-	    header_ip=(iphdr *)((char*)pkt_data+offset_to_ip);
-	    if ( pkt_header->caplen >= (offset_to_ip+sizeof(struct udphdr)) &&
-	         header_ip->protocol == 17){//UPPROTO_UDP=17
+            header_ip=(iphdr *)((char*)pkt_data+offset_to_ip);
+            header_ipv6=(ipv6hdr *)header_ip;
+            if ( /* sane IPv4 UDP */
+                 (header_ip->version == 4 && pkt_header->caplen >=
+                   (offset_to_ip+sizeof(struct iphdr)+sizeof(struct udphdr)) &&
+                   header_ip->protocol == 17) ||//UPPROTO_UDP=17
+                 /* sane IPv6 UDP */
+                 (header_ipv6->version == 6 && pkt_header->caplen >=
+                   (offset_to_ip+sizeof(struct ipv6hdr)+sizeof(struct udphdr)) &&
+                   header_ipv6->nexthdr == 17) ){
                 int idx_leg=0;
                 int idx_rtp=0;
                 int save_this_rtp_packet=0;
                 int is_rtcp=0;
                 uint16_t rtp_port_mask=0xffff;
 
-                header_udp=(udphdr *)((char*)header_ip+sizeof(*header_ip));
+                header_udp=(udphdr *)((char*)header_ip+
+                    ((header_ip->version == 4) ? sizeof(iphdr) : sizeof(ipv6hdr)));
                 data=(char *)header_udp+sizeof(*header_udp);
                 datalen=pkt_header->len-((unsigned long)data-(unsigned long)pkt_data);
 
@@ -367,7 +407,7 @@ int main(int argc, char *argv[])
 
                 if (save_this_rtp_packet &&
                         ct->find_ip_port_ssrc(
-                            header_ip->daddr,htons(header_udp->dest) & rtp_port_mask,
+                            hdaddr(header_ip),htons(header_udp->dest) & rtp_port_mask,
                             get_ssrc(data,is_rtcp),
                             &idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
@@ -377,7 +417,7 @@ int main(int argc, char *argv[])
                     }
                 }else if (save_this_rtp_packet &&
                         ct->find_ip_port_ssrc(
-                            header_ip->saddr,htons(header_udp->source) & rtp_port_mask,
+                            hsaddr(header_ip),htons(header_udp->source) & rtp_port_mask,
                             get_ssrc(data,is_rtcp),
                             &idx_leg,&idx_rtp)){
                     if (ct->table[idx_leg].f_pcap!=NULL) {
@@ -494,15 +534,19 @@ int main(int argc, char *argv[])
 		    }
 		}else{
 		    if (verbosity>=3){
-			char st1[16];
-			char st2[16];
-			struct in_addr in;
+			char st1[INET6_ADDRSTRLEN];
+			char st2[INET6_ADDRSTRLEN];
 
-			in.s_addr=header_ip->saddr;
-			strcpy(st1,inet_ntoa(in));
-			in.s_addr=header_ip->daddr;
-			strcpy(st2,inet_ntoa(in));
-			printf ("Skipping udp packet %s:%d->%s:%d\n",st1,htons(header_udp->source),st2,htons(header_udp->dest));
+                        if (header_ip->version == 4){
+                            inet_ntop(AF_INET, &(header_ip->saddr), st1, sizeof(st1));
+                            inet_ntop(AF_INET, &(header_ip->daddr), st2, sizeof(st2));
+                        }else{
+                            inet_ntop(AF_INET6, &(header_ipv6->saddr), st1, sizeof(st1));
+                            inet_ntop(AF_INET6, &(header_ipv6->daddr), st2, sizeof(st2));
+                        }
+                        printf ("Skipping udp packet %s:%d->%s:%d\n",
+                            st1, htons(header_udp->source),
+                            st2, htons(header_udp->dest));
 		    }
 		}
 	    }
@@ -569,7 +613,7 @@ char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long
         l=0;
     }else{
         r+=tl;
-        l=(unsigned long)memmem((void *)r,len-(r-(unsigned long)ptr),"\r\n",2);
+        l=(unsigned long)memmem((void *)r,len-(r-(unsigned long)ptr),"\n",1);
         if (l>0){
             l-=r;
         }else{

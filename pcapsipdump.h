@@ -4,6 +4,7 @@
     This file is based on linux kernel, namely:
     - udp.h by Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
     - ip.h by Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
+    - ipv6.h
 
     pcapsipdump is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,6 +35,7 @@
 #define PCAP_NETMASK_UNKNOWN    0xffffffff
 #endif
 
+/*** IPv4 */
 struct iphdr {
 #if defined(__LITTLE_ENDIAN)
 	uint8_t	ihl:4,
@@ -56,6 +58,24 @@ struct iphdr {
 	/*The options start here. */
 };
 
+/* IPv6 */
+struct ipv6hdr {
+#if defined(__LITTLE_ENDIAN)
+        uint8_t                 priority:4,
+                                version:4;
+#elif defined(__BIG_ENDIAN)
+        uint8_t                 version:4,
+                                priority:4;
+#else
+#error Endian not defined                                                       
+#endif
+        uint8_t                 flow_lbl[3];
+        uint16_t                payload_len;
+        uint8_t                 nexthdr;
+        uint8_t                 hop_limit;
+        struct  in6_addr        saddr;
+        struct  in6_addr        daddr;
+};
 
 struct udphdr {
 	uint16_t	source;

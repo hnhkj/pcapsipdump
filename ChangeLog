@@ -1,3 +1,6 @@
+Fri Feb  7 12:16:13 PST 2014
+        * add IPv6 support 
+
 Fri May 18 01:25:08 PDT 2012
         * add option to specify pcap filter expression (BPF)
           Use with caution - it applies to both signalling and RTP.
