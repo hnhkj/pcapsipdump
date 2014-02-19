@@ -142,6 +142,7 @@ int main(int argc, char *argv[])
     char number_filter[128];
     number_filter[0]=0;
 #endif
+    const char *pid_file="/var/run/pcapsipdump.pid";
 
     ifname=NULL;
     fname=NULL;
@@ -325,7 +326,20 @@ int main(int argc, char *argv[])
 
     if (opt_fork){
         // daemonize
-        if (fork()) exit(0);
+
+        pid_t pid = fork();
+        if (pid) {
+             FILE *fp = fopen(pid_file, "w");
+             if (fp) {
+                 fprintf(fp, "%d\n", pid);
+                 fclose(fp);
+                 exit(0);
+             }else{
+                 fprintf(stderr, "Can't write PID %d to file %s\n",
+                         pid, pid_file);
+                 return(2);
+             }
+        }
     }
 
     {
