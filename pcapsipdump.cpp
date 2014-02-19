@@ -458,9 +458,14 @@ int main(int argc, char *argv[])
                     }
 
 		    data[datalen]=0;
-		    get_sip_peername(data,datalen,"From:",caller,sizeof(caller));
-		    get_sip_peername(data,datalen,"To:",called,sizeof(called));
-		    s=gettag(data,datalen,"Call-ID:",&l);
+                    if (get_sip_peername(data,datalen,"From:",caller,sizeof(caller))) {
+                        get_sip_peername(data,datalen,"f:",caller,sizeof(caller));
+                    }
+                    if (get_sip_peername(data,datalen,"To:",caller,sizeof(caller))) {
+                        get_sip_peername(data,datalen,"t:",caller,sizeof(caller));
+                    }
+		    s=gettag(data,datalen,"Call-ID:",&l) ? :
+		      gettag(data,datalen,"i:",&l);
                     number_filter_matched=false;
 #ifdef USE_REGEXP
                     {
@@ -526,7 +531,8 @@ int main(int argc, char *argv[])
                     if (strcmp(sip_method,"BYE")==0){
                         ct->table[idx].had_bye=1;
                     }
-		    s=gettag(data,datalen,"Content-Type:",&l);
+		    s=gettag(data,datalen,"Content-Type:",&l) ? :
+ 		      gettag(data,datalen,"c:",&l);
 		    if(idx>=0 && l>0 && strncasecmp(s,"application/sdp",l)==0 && strstr(data,"\r\n\r\n")!=NULL){
 			in_addr_t tmp_addr;
 			unsigned short tmp_port;
