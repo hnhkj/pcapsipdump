@@ -633,7 +633,7 @@ char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long
         l=0;
     }else{
         r+=tl;
-        l=(unsigned long)memmem((void *)r,len-(r-(unsigned long)ptr),"\n",1);
+        l=(unsigned long)memmem((void *)r,len-(r-(unsigned long)ptr),"\r\n",2);
         if (l>0){
             l-=r;
         }else{
