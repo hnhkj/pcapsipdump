@@ -461,8 +461,8 @@ int main(int argc, char *argv[])
                     if (get_sip_peername(data,datalen,"From:",caller,sizeof(caller))) {
                         get_sip_peername(data,datalen,"f:",caller,sizeof(caller));
                     }
-                    if (get_sip_peername(data,datalen,"To:",caller,sizeof(caller))) {
-                        get_sip_peername(data,datalen,"t:",caller,sizeof(caller));
+                    if (get_sip_peername(data,datalen,"To:",caller,sizeof(called))) {
+                        get_sip_peername(data,datalen,"t:",caller,sizeof(called));
                     }
 		    s=gettag(data,datalen,"Call-ID:",&l) ? :
 		      gettag(data,datalen,"i:",&l);
