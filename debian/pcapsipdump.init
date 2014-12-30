@@ -40,7 +40,15 @@ stop() {
 restart() {
   	stop
 	start
-}	
+}
+
+status() {
+        if [ -e $PIDFILE ] ; then
+                echo $"$NAME (pid $( cat $PIDFILE )) is running"
+        else
+                echo $"$NAME is stopped"
+        fi
+}
 
 case "$1" in
   start)
@@ -52,7 +60,10 @@ case "$1" in
   restart)
   	restart
 	;;
+  status)
+        status
+        ;;
   *)
-        echo $"Usage: $0 {start|stop|restart}"
+        echo $"Usage: $0 {start|stop|restart|status}"
 	exit 1
 esac
