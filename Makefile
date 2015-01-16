@@ -3,7 +3,7 @@
 
 LIBS ?= -lpcap -lstdc++ -lbsd -DUSE_BSD_STRING_H
 #if no libbsd available, use this instead:
-#LIBS ?= -lpcap -lbsd -lstdc++
+#LIBS ?= -lpcap -lstdc++
 
 RELEASEFLAGS ?= -O3 -Wall
 
