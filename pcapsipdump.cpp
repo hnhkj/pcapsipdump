@@ -36,8 +36,15 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
 #ifdef USE_REGEXP
 #include <regex.h>
+#endif
+
+#ifdef USE_BSD_STRING_H
+#include <bsd/string.h>
+#else
+#define strlcpy strncpy
 #endif
 
 #include <pcap.h>
@@ -521,7 +528,7 @@ int main(int argc, char *argv[])
                                     *strstr(str2,".raw")='\0';
                                     strcat(str2,".pcap");
                                     ct->table[idx].f_pcap=pcap_dump_open(handle,str2);
-                                    strncpy(ct->table[idx].fn_pcap,str2,sizeof(ct->table[idx].fn_pcap));
+                                    strlcpy(ct->table[idx].fn_pcap,str2,sizeof(ct->table[idx].fn_pcap));
                                 }
 			    }else{
 				if (verbosity>=2){

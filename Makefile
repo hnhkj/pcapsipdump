@@ -1,7 +1,12 @@
 #uncommend next line for regex support
 #DEFS ?= -DUSE_REGEXP
-LIBS ?= -lpcap -lstdc++
+
+LIBS ?= -lpcap -lstdc++ -lbsd -DUSE_BSD_STRING_H
+#if no libbsd available, use this instead:
+#LIBS ?= -lpcap -lbsd -lstdc++
+
 RELEASEFLAGS ?= -O3 -Wall
+
 
 all: make-checks/all pcapsipdump
 
