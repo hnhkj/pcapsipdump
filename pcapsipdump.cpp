@@ -234,17 +234,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (chdir(opt_chdir)){
-        if (mkdir(opt_chdir,0777)){
-            perror (opt_chdir);
-            return(2);
-        }
-        if (chdir(opt_chdir)){
-            perror (opt_chdir);
-            return(2);
-        }
-    }
-
     if ((fname==NULL)&&(ifname==NULL)){
 	printf( "pcapsipdump version %s\n"
 		"Usage: pcapsipdump [-fpUt] [-i <interface> | -r <file>] [-d <working directory>]\n"
@@ -273,6 +262,17 @@ int main(int argc, char *argv[])
                 " For the expression syntax, see 'man 7 pcap-filter'\n"
 		,PCAPSIPDUMP_VERSION);
 	return 1;
+    }
+
+    if (chdir(opt_chdir)){
+        if (mkdir(opt_chdir,0777)){
+            perror (opt_chdir);
+            return(2);
+        }
+        if (chdir(opt_chdir)){
+            perror (opt_chdir);
+            return(2);
+        }
     }
 
     ct = new calltable;
