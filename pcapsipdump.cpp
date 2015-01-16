@@ -235,8 +235,14 @@ int main(int argc, char *argv[])
     }
 
     if (chdir(opt_chdir)){
-        perror (opt_chdir);
-        return(2);
+        if (mkdir(opt_chdir,0777)){
+            perror (opt_chdir);
+            return(2);
+        }
+        if (chdir(opt_chdir)){
+            perror (opt_chdir);
+            return(2);
+        }
     }
 
     if ((fname==NULL)&&(ifname==NULL)){
