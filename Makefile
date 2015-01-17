@@ -1,22 +1,27 @@
 #uncommend next line for regex support
 #DEFS ?= -DUSE_REGEXP
-
-LIBS ?= -lpcap -lstdc++ -lbsd -DUSE_BSD_STRING_H
-#if no libbsd available, use this instead:
-#LIBS ?= -lpcap -lstdc++
-
+LIBS ?= -lpcap -lstdc++
 RELEASEFLAGS ?= -O3 -Wall
 
+BSDSTR_DEFS := $(shell ldconfig -p |grep -q libbsd.so && \
+    echo -DUSE_BSD_STRING_H)
+
+BSDSTR_LIBS := $(shell ldconfig -p |grep -q libbsd.so && \
+    echo -lbsd)
 
 all: make-checks/all pcapsipdump
 
 include make-checks/*.mk
 
 pcapsipdump: pcapsipdump.cpp calltable.cpp calltable.h
-	$(CXX) $(RELEASEFLAGS) $(CXXFLAGS) $(LDFLAGS) $(DEFS) pcapsipdump.cpp calltable.cpp $(LIBS) -o pcapsipdump
+	$(CXX) $(RELEASEFLAGS) $(CXXFLAGS) $(LDFLAGS) $(DEFS) $(BSDSTR_DEFS) \
+	pcapsipdump.cpp calltable.cpp $(LIBS) $(BSDSTR_LIBS) \
+       	-o pcapsipdump
 
 pcapsipdump-debug: make-checks pcapsipdump.cpp calltable.cpp calltable.h
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFS) -ggdb pcapsipdump.cpp calltable.cpp $(LIBS) -o pcapsipdump-debug
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFS) $(BSDSTR_DEFS) -ggdb \
+	pcapsipdump.cpp calltable.cpp $(LIBS) $(BSDSTR_LIBS) \
+	-o pcapsipdump-debug
 
 clean:
 	rm -f pcapsipdump
