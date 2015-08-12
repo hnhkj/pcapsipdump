@@ -28,7 +28,7 @@ pcapsipdump: pcapsipdump.cpp calltable.cpp calltable.h
 
 pcapsipdump-debug: make-checks pcapsipdump.cpp calltable.cpp calltable.h
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFS) $(BSDSTR_DEFS) -ggdb \
-	pcapsipdump.cpp calltable.cpp $(LIBS) $(BSDSTR_LIBS) \
+	pcapsipdump.cpp calltable.cpp $(LIBS) $(BSDSTR_LIBS) -pg \
 	-o pcapsipdump-debug
 
 clean:
