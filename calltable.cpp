@@ -30,6 +30,8 @@
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
+using namespace std;
+
 calltable::calltable()
 {
     table_size=0;
@@ -136,10 +138,31 @@ int calltable::find_ip_port_ssrc(
             int *idx_rtp)
 {
     int i_leg,i_rtp;
+
+#ifdef USE_CALLTABLE_CACHE
+    auto aps = std::make_tuple(addr, port, ssrc);
+    if(this->cache.count(aps)){
+        *idx_leg = std::get<0>(cache[aps]);
+        *idx_rtp = std::get<1>(cache[aps]);
+        if(*idx_leg < 0){
+            return 0;
+        }else{
+            return 1;
+        }
+    }
+#endif
     for(i_leg=0;i_leg<(int)table_size;i_leg++){
         for(i_rtp=0;i_rtp<table[i_leg].ip_n;i_rtp++){
             if(table[i_leg].port[i_rtp]==port && table[i_leg].ip[i_rtp]==addr){
-                if (!table[i_leg].had_bye || table[i_leg].ssrc[i_rtp]==ssrc){
+                if(!table[i_leg].had_bye || table[i_leg].ssrc[i_rtp]==ssrc){
+#ifdef USE_CALLTABLE_CACHE
+                    if(table[i_leg].ssrc[i_rtp]!=ssrc){
+                        // new ssrc - update cache as well
+                        cache.erase(std::make_tuple(addr, port, table[i_leg].ssrc[i_rtp]));
+                        cache[aps]=std::make_pair(i_leg, i_rtp);
+                    }
+                    cache[aps]=std::make_pair(i_leg, i_rtp);
+#endif
                     table[i_leg].ssrc[i_rtp]=ssrc;
                     *idx_leg=i_leg;
                     *idx_rtp=i_rtp;
@@ -148,6 +171,11 @@ int calltable::find_ip_port_ssrc(
             }
         }
     }
+#ifdef USE_CALLTABLE_CACHE
+    // add negative cache entry
+    // TODO: how do we clean those up, to avoid memory leak?
+    cache[aps]=std::make_pair(-1, -1);
+#endif
     return 0;
 }
 
@@ -166,6 +194,15 @@ int calltable::do_cleanup( time_t currtime ){
 	    }
 	    memset((void*)&table[idx],0,sizeof(table[idx]));
 	    table[idx].is_used=0;
+	    table[idx].ip_n=0;
+#ifdef USE_CALLTABLE_CACHE
+            for(int i_rtp=0; i_rtp<table[idx].ip_n; i_rtp++){
+                cache.erase(std::make_tuple(
+                            table[idx].ip[i_rtp],
+                            table[idx].port[i_rtp],
+                            table[idx].ssrc[i_rtp]));
+            }
+#endif
 	}
     }
     return 0;

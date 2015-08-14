@@ -34,13 +34,15 @@ int main(void){
 
     ct = new calltable;
     populate_calltable(ct,1);
-    for(int i=1;i<5;i++){
-        int n = int(pow(10,i));
-        int m = n - int(pow(10,i-1));
+    for(int i=1;i<6;i++){
+        int n = int(pow(10,i)/2);
+        int m = n - int(pow(10,i-1)/2);
+        //printf("populating %d entries...\n", m);
         populate_calltable(ct,m);
+        //printf("benchmarking over %d iterations...\n", 3*int(pow(10,5-i)));
         printf("%7.3f us per ct->find_ip_port_ssrc() with %d*%d elements in table\n",
                 n,
-                benchmark_find_ip_port_ssrc(ct,int(pow(10,5-i))),
+                benchmark_find_ip_port_ssrc(ct,3*int(pow(10,5-i))),
                 calltable_max_ip_per_call);
     }
 }

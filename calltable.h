@@ -19,11 +19,12 @@
 
     Project's home: http://pcapsipdump.sf.net/
 */
+#include <map>
 
 #include <pcap.h>
 #include <arpa/inet.h>
 
-#define calltable_max 10240
+#define calltable_max 102400
 #define calltable_max_ip_per_call 4
 
 struct calltable_element {
@@ -41,6 +42,10 @@ struct calltable_element {
 	FILE *f;
 	char fn_pcap[128];
 };
+
+#ifdef USE_CALLTABLE_CACHE
+typedef std::tuple<in_addr_t, uint16_t, uint32_t> addr_port_ssid;
+#endif
 
 class calltable
 {
@@ -72,4 +77,7 @@ class calltable
     private:
 	unsigned long table_size;
 	time_t global_last_packet_time;
+#ifdef USE_CALLTABLE_CACHE
+        std::map <addr_port_ssid, std::pair<int, int> > cache;
+#endif
 };
