@@ -44,7 +44,8 @@ struct calltable_element {
 };
 
 #ifdef USE_CALLTABLE_CACHE
-typedef std::tuple<in_addr_t, uint16_t, uint32_t> addr_port_ssid;
+typedef std::tuple<in_addr_t, uint16_t> addr_port;
+typedef std::tuple<int, int, uint32_t> ileg_irtp_ssrc;
 #endif
 
 class calltable
@@ -78,6 +79,6 @@ class calltable
 	unsigned long table_size;
 	time_t global_last_packet_time;
 #ifdef USE_CALLTABLE_CACHE
-        std::map <addr_port_ssid, std::pair<int, int> > cache;
+        std::map <addr_port, ileg_irtp_ssrc> cache;
 #endif
 };

@@ -109,6 +109,9 @@ int calltable::add_ip_port(
 	table[call_idx].ip[n]=addr;
 	table[call_idx].port[n]=port;
 	table[call_idx].ip_n++;
+#ifdef USE_CALLTABLE_CACHE
+        cache[std::make_tuple(addr, port)] = std::make_tuple(call_idx, n, 0);
+#endif
     }
     return 0;
 }
@@ -140,15 +143,30 @@ int calltable::find_ip_port_ssrc(
     int i_leg,i_rtp;
 
 #ifdef USE_CALLTABLE_CACHE
-    auto aps = std::make_tuple(addr, port, ssrc);
-    if(this->cache.count(aps)){
-        *idx_leg = std::get<0>(cache[aps]);
-        *idx_rtp = std::get<1>(cache[aps]);
-        if(*idx_leg < 0){
-            return 0;
-        }else{
-            return 1;
+    auto ap = std::make_tuple(addr, port);
+    while(true){
+        if(this->cache.count(ap)){
+            *idx_leg = std::get<0>(cache[ap]);
+            *idx_rtp = std::get<1>(cache[ap]);
+            if(*idx_leg >= 0){
+                if(ssrc != std::get<2>(cache[ap])){ // new ssid
+                    if(table[*idx_leg].had_bye){ // and call has finished
+                        // that's probably ip/port reuse
+                        cache.erase(ap);
+                        break; // abandon cache code, go to full search
+                    }else{
+                        //got new ssrc in the same ongoing call - update table & cache
+                        table[*idx_leg].ssrc[*idx_rtp] = ssrc;
+                        cache[ap] = std::make_tuple(*idx_leg, *idx_rtp, ssrc);
+                        
+                    }
+                }
+                return 1;
+            }else{
+                return 0;
+            }
         }
+        break;
     }
 #endif
     for(i_leg=0;i_leg<(int)table_size;i_leg++){
@@ -156,12 +174,7 @@ int calltable::find_ip_port_ssrc(
             if(table[i_leg].port[i_rtp]==port && table[i_leg].ip[i_rtp]==addr){
                 if(!table[i_leg].had_bye || table[i_leg].ssrc[i_rtp]==ssrc){
 #ifdef USE_CALLTABLE_CACHE
-                    if(table[i_leg].ssrc[i_rtp]!=ssrc){
-                        // new ssrc - update cache as well
-                        cache.erase(std::make_tuple(addr, port, table[i_leg].ssrc[i_rtp]));
-                        cache[aps]=std::make_pair(i_leg, i_rtp);
-                    }
-                    cache[aps]=std::make_pair(i_leg, i_rtp);
+                    cache[ap]=std::make_tuple(i_leg, i_rtp, ssrc);
 #endif
                     table[i_leg].ssrc[i_rtp]=ssrc;
                     *idx_leg=i_leg;
@@ -174,7 +187,7 @@ int calltable::find_ip_port_ssrc(
 #ifdef USE_CALLTABLE_CACHE
     // add negative cache entry
     // TODO: how do we clean those up, to avoid memory leak?
-    cache[aps]=std::make_pair(-1, -1);
+    cache[ap]=std::make_tuple(-1, -1, 0);
 #endif
     return 0;
 }
@@ -199,8 +212,7 @@ int calltable::do_cleanup( time_t currtime ){
             for(int i_rtp=0; i_rtp<table[idx].ip_n; i_rtp++){
                 cache.erase(std::make_tuple(
                             table[idx].ip[i_rtp],
-                            table[idx].port[i_rtp],
-                            table[idx].ssrc[i_rtp]));
+                            table[idx].port[i_rtp]));
             }
 #endif
 	}
