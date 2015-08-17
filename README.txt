@@ -17,7 +17,7 @@ Usage: pcapsipdump [-fpUt] [-i <interface> | -r <file>] [-d <working directory>]
  -R   RTP filter. Specifies what kind of RTP information to include in capture:
       'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.
  -n   Number-filter. Only calls to/from specified number will be recorded
-      Argument is string. Recompile as 'make DEFS=-DUSE_REGEXP' to get regexp support.
+      Argument is a regular expression. See 'man 7 regex' for details.
  -l   Record only each N-th call (i.e. '-l 3' = record only each third call)
  For the expression syntax, see 'man 7 pcap-filter'
 

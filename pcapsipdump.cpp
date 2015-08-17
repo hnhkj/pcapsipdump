@@ -36,10 +36,7 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#ifdef USE_REGEXP
 #include <regex.h>
-#endif
 
 #ifdef USE_BSD_STRING_H
 #include <bsd/string.h>
@@ -142,13 +139,8 @@ int main(int argc, char *argv[])
     int call_skip_cnt=1;
     int opt_pcap_buffer_size=0; /* Operating system capture buffer size, a.k.a. libpcap ring buffer size */
     bool number_filter_matched=false;
-#ifdef USE_REGEXP
     regex_t number_filter;
     number_filter.allocated=0;
-#else
-    char number_filter[128];
-    number_filter[0]=0;
-#endif
     const char *pid_file="/var/run/pcapsipdump.pid";
 
     ifname=NULL;
@@ -170,11 +162,7 @@ int main(int argc, char *argv[])
                 verbosity=atoi(optarg);
                 break;
             case 'n':
-#ifdef USE_REGEXP
                 regcomp(&number_filter,optarg,0);
-#else
-                strcpy(number_filter,optarg);
-#endif
                 break;
             case 'R':
                 if (strcasecmp(optarg,"none")==0){
@@ -260,11 +248,7 @@ int main(int argc, char *argv[])
 		" -R   RTP filter. Specifies what kind of RTP information to include in capture:\n"
 		"      'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.\n"
 		" -n   Number-filter. Only calls to/from specified number will be recorded\n"
-#ifdef USE_REGEXP
-		"      Argument is regular expression. See 'man 7 regex' for details.\n"
-#else
-		"      Argument is string. Recompile as 'make DEFS=-DUSE_REGEXP' to get regexp support.\n"
-#endif
+		"      Argument is a regular expression. See 'man 7 regex' for details.\n"
                 " -l   Record only each N-th call (i.e. '-l 3' = record only each third call)\n"
                 " For the expression syntax, see 'man 7 pcap-filter'\n"
 		,PCAPSIPDUMP_VERSION);
@@ -480,7 +464,6 @@ int main(int argc, char *argv[])
 		    s=gettag(data,datalen,"Call-ID:",&l) ? :
 		      gettag(data,datalen,"i:",&l);
                     number_filter_matched=false;
-#ifdef USE_REGEXP
                     {
                         regmatch_t pmatch[1];
                         if ((number_filter.allocated==0) ||
@@ -489,11 +472,6 @@ int main(int argc, char *argv[])
                             number_filter_matched=true;
                         }
                     }
-#else
-                    if (number_filter[0]==0||(strcmp(number_filter,caller)==0)||(strcmp(number_filter,called)==0)) {
-                        number_filter_matched=true;
-                    }
-#endif
 		    if (s!=NULL && ((idx=ct->find_by_call_id(s,l))<0) && number_filter_matched){
 			if ((idx=ct->add(s,l,pkt_header->ts.tv_sec))<0){
 			    printf("Too many simultaneous calls. Ran out of call table space!\n");
