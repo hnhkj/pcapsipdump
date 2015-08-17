@@ -35,8 +35,8 @@ pcapsipdump-debug: make-checks pcapsipdump.cpp calltable.cpp calltable.h
 	pcapsipdump.cpp calltable.cpp $(LIBS) $(BSDSTR_LIBS) -pg \
 	-o pcapsipdump-debug
 
-clean:
-	rm -f pcapsipdump
+clean: make-checks/clean
+	rm -f pcapsipdump pcapsipdump-debug gmon.out
 
 install: $(EXTRA_INSTALL)
 	install pcapsipdump ${DESTDIR}/usr/sbin/pcapsipdump
