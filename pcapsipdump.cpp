@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     ifname=NULL;
     fname=NULL;
     opt_chdir="/var/spool/pcapsipdump";
-    regcomp(&method_filter,"^(INVITE|OPTIONS|REGISTER)$",0);
+    regcomp(&method_filter, "^(INVITE|OPTIONS|REGISTER)$", REG_EXTENDED);
 
     while(1) {
         char c;
@@ -165,10 +165,10 @@ int main(int argc, char *argv[])
                 break;
             case 'm':
                 regfree(&method_filter);
-                regcomp(&method_filter,optarg,0);
+                regcomp(&method_filter, optarg, REG_EXTENDED);
                 break;
             case 'n':
-                regcomp(&number_filter,optarg,0);
+                regcomp(&number_filter, optarg, REG_EXTENDED);
                 break;
             case 'R':
                 if (strcasecmp(optarg,"none")==0){
