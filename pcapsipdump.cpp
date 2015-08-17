@@ -139,18 +139,20 @@ int main(int argc, char *argv[])
     int call_skip_cnt=1;
     int opt_pcap_buffer_size=0; /* Operating system capture buffer size, a.k.a. libpcap ring buffer size */
     bool number_filter_matched=false;
-    regex_t number_filter;
+    regex_t number_filter, method_filter;
+    regmatch_t pmatch[1];
     number_filter.allocated=0;
     const char *pid_file="/var/run/pcapsipdump.pid";
 
     ifname=NULL;
     fname=NULL;
     opt_chdir="/var/spool/pcapsipdump";
+    regcomp(&method_filter,"^(INVITE|OPTIONS|REGISTER)$",0);
 
     while(1) {
         char c;
 
-        c = getopt (argc, argv, "i:r:d:v:n:R:l:B:fpUt");
+        c = getopt (argc, argv, "i:r:d:v:m:n:R:l:B:fpUt");
         if (c == -1)
             break;
 
@@ -160,6 +162,10 @@ int main(int argc, char *argv[])
                 break;
             case 'v':
                 verbosity=atoi(optarg);
+                break;
+            case 'm':
+                regfree(&method_filter);
+                regcomp(&method_filter,optarg,0);
                 break;
             case 'n':
                 regcomp(&number_filter,optarg,0);
@@ -232,8 +238,8 @@ int main(int argc, char *argv[])
     if ((fname==NULL)&&(ifname==NULL)){
 	printf( "pcapsipdump version %s\n"
 		"Usage: pcapsipdump [-fpUt] [-i <interface> | -r <file>] [-d <working directory>]\n"
-                "                   [-v level] [-R filter] [-n filter] [-l filter] [-B size]\n"
-                "                   [expression]\n"
+                "                   [-v level] [-R filter] [-m filter] [-n filter] [-l filter]\n"
+                "                   [-B size] [expression]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
@@ -247,6 +253,7 @@ int main(int argc, char *argv[])
 		"      Set this to few MiB or more to avoid packets dropped by kernel.\n"
 		" -R   RTP filter. Specifies what kind of RTP information to include in capture:\n"
 		"      'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.\n"
+		" -m   Method-filter. Default is '^(INVITE|OPTIONS|REGISTER)$'\n"
 		" -n   Number-filter. Only calls to/from specified number will be recorded\n"
 		"      Argument is a regular expression. See 'man 7 regex' for details.\n"
                 " -l   Record only each N-th call (i.e. '-l 3' = record only each third call)\n"
@@ -464,19 +471,16 @@ int main(int argc, char *argv[])
 		    s=gettag(data,datalen,"Call-ID:",&l) ? :
 		      gettag(data,datalen,"i:",&l);
                     number_filter_matched=false;
-                    {
-                        regmatch_t pmatch[1];
-                        if ((number_filter.allocated==0) ||
-                            (regexec(&number_filter, caller, 1, pmatch, 0)==0) ||
-                            (regexec(&number_filter, called, 1, pmatch, 0)==0)) {
-                            number_filter_matched=true;
-                        }
+                    if ((number_filter.allocated==0) ||
+                        (regexec(&number_filter, caller, 1, pmatch, 0)==0) ||
+                        (regexec(&number_filter, called, 1, pmatch, 0)==0)) {
+                        number_filter_matched=true;
                     }
 		    if (s!=NULL && ((idx=ct->find_by_call_id(s,l))<0) && number_filter_matched){
 			if ((idx=ct->add(s,l,pkt_header->ts.tv_sec))<0){
 			    printf("Too many simultaneous calls. Ran out of call table space!\n");
 			}else{
-			    if ((strcmp(sip_method,"INVITE")==0)||(strcmp(sip_method,"OPTIONS")==0)||(strcmp(sip_method,"REGISTER")==0)){
+			    if (regexec(&method_filter, sip_method, 1, pmatch, 0) == 0){
                                 if ((--call_skip_cnt)>0){
                                     if (verbosity>=3){
                                         printf("Skipping %s call from %s to %s \n",sip_method,caller,called);
