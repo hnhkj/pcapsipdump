@@ -30,7 +30,9 @@
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
+#ifdef USE_CALLTABLE_CACHE
 using namespace std;
+#endif
 
 calltable::calltable()
 {

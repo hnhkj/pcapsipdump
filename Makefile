@@ -2,7 +2,10 @@
 #DEFS ?= -DUSE_REGEXP
 LIBS ?= -lpcap -lstdc++
 RELEASEFLAGS ?= -O3 -Wall
-CXXFLAGS ?= --std=c++11
+
+ifneq (,$(findstring USE_CALLTABLE_CACHE,$(DEFS)))
+	CXXFLAGS ?= --std=c++11
+endif
 
 # auto-detect if bsd/strings.h is available
 ifneq ($(shell ldconfig -p |grep libbsd.so),)
