@@ -22,7 +22,6 @@
 
 #ifdef USE_CALLTABLE_CACHE
 #include <string>
-#include <tuple>
 #include <map>
 #endif
 
@@ -49,8 +48,15 @@ struct calltable_element {
 };
 
 #ifdef USE_CALLTABLE_CACHE
-typedef std::tuple<in_addr_t, uint16_t> addr_port;
-typedef std::tuple<int, int, uint32_t> ileg_irtp_ssrc;
+struct addr_port {
+    in_addr_t addr;
+    uint16_t  port;
+};
+struct ileg_irtp_ssrc {
+    int ileg;
+    int irtp;
+    uint32_t ssrc;
+};
 #endif
 
 class calltable
