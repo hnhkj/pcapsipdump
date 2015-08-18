@@ -80,5 +80,6 @@ class calltable
 	time_t global_last_packet_time;
 #ifdef USE_CALLTABLE_CACHE
         std::map <addr_port, ileg_irtp_ssrc> cache;
+        std::map <std::string, int> call_id_cache;
 #endif
 };

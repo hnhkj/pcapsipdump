@@ -46,8 +46,8 @@ int calltable::add(
 	unsigned long call_id_len,
 	time_t time)
 {
-    uint32_t idx=(uint32_t)-1,i,found_empty=0;
-    for (i=0;i<table_size;i++){
+    int idx=-1,i,found_empty=0;
+    for (i=0;i<(int)table_size;i++){
 	if(table[i].is_used==0){
 	    idx=i;
 	    found_empty=1;
@@ -71,6 +71,12 @@ int calltable::add(
     table[idx].f_pcap=NULL;
     table[idx].last_packet_time=time;
     global_last_packet_time=time;
+#ifdef USE_CALLTABLE_CACHE
+    {
+        std::string s(call_id, call_id_len);
+        call_id_cache[s] = idx;
+    }
+#endif
     return idx;
 }
 
@@ -78,6 +84,14 @@ int calltable::find_by_call_id(
 	char *call_id,
 	unsigned long call_id_len)
 {
+#ifdef USE_CALLTABLE_CACHE
+    std::string s(call_id, call_id_len);
+    if (call_id_cache.count(s)){
+        return call_id_cache[s];
+    }else{
+        return -1;
+    }
+#else
     int i;
     for (i=0;i<(int)table_size;i++){
 	if ((table[i].is_used!=0)&&
@@ -87,6 +101,7 @@ int calltable::find_by_call_id(
 	}
     }
     return -1;
+#endif
 }
 
 int calltable::add_ip_port(
@@ -215,6 +230,10 @@ int calltable::do_cleanup( time_t currtime ){
                 cache.erase(std::make_tuple(
                             table[idx].ip[i_rtp],
                             table[idx].port[i_rtp]));
+            }
+            {
+                std::string s(table[idx].call_id, table[idx].call_id_len);
+                call_id_cache.erase(s);
             }
 #endif
 	}
