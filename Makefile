@@ -2,7 +2,7 @@ LIBS ?= -lpcap -lstdc++
 RELEASEFLAGS ?= -O3 -Wall
 
 ifneq (,$(findstring USE_CALLTABLE_CACHE,$(DEFS)))
-	CXXFLAGS ?= --std=c++11
+	CXXFLAGS ?= --std=c++0x
 endif
 
 # auto-detect if bsd/strings.h is available
