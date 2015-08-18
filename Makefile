@@ -6,7 +6,8 @@ ifneq (,$(findstring USE_CALLTABLE_CACHE,$(DEFS)))
 endif
 
 # auto-detect if bsd/strings.h is available
-ifneq ($(shell ldconfig -p |grep libbsd.so),)
+ifeq ($(shell $(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFS) -E -o /dev/null \
+    	make-checks/libbsd.cpp 2>/dev/null; echo $$?),0)
 	BSDSTR_DEFS := -DUSE_BSD_STRING_H
 	BSDSTR_LIBS := -lbsd
 endif
