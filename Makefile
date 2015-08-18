@@ -36,7 +36,7 @@ pcapsipdump-debug: make-checks pcapsipdump.cpp calltable.cpp calltable.h
 clean: make-checks/clean
 	rm -f pcapsipdump pcapsipdump-debug gmon.out
 
-install: $(EXTRA_INSTALL)
+install: pcapsipdump $(EXTRA_INSTALL)
 	install pcapsipdump ${DESTDIR}/usr/sbin/pcapsipdump
 	mkdir -p ${DESTDIR}/var/spool/pcapsipdump
 	chmod 0700 ${DESTDIR}/var/spool/pcapsipdump
