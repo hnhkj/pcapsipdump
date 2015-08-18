@@ -19,7 +19,12 @@
 
     Project's home: http://pcapsipdump.sf.net/
 */
+
+#ifdef USE_CALLTABLE_CACHE
+#include <string>
+#include <tuple>
 #include <map>
+#endif
 
 #include <pcap.h>
 #include <arpa/inet.h>
