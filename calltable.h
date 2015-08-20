@@ -20,6 +20,7 @@
     Project's home: http://pcapsipdump.sf.net/
 */
 
+#include <vector>
 #ifdef USE_CALLTABLE_CACHE
 #include <string>
 #include <map>
@@ -28,7 +29,6 @@
 #include <pcap.h>
 #include <arpa/inet.h>
 
-#define calltable_max 102400
 #define calltable_max_ip_per_call 4
 
 struct calltable_element {
@@ -84,10 +84,9 @@ class calltable
             int *idx_leg,
             int *idx_rtp);
 	int do_cleanup( time_t currtime );
-	calltable_element *table;
+	std::vector <calltable_element> table;
 	bool erase_non_t38;
     private:
-	unsigned long table_size;
 	time_t global_last_packet_time;
 #ifdef USE_CALLTABLE_CACHE
         std::map <addr_port, ileg_irtp_ssrc> cache;

@@ -41,9 +41,8 @@ bool operator <(addr_port const& a, addr_port const& b)
 
 calltable::calltable()
 {
-    table_size=0;
-    table=(calltable_element*)malloc(sizeof(calltable_element)*calltable_max);
-    erase_non_t38=0;
+    table.clear();
+    erase_non_t38 = 0;
 }
 
 int calltable::add(
@@ -51,20 +50,16 @@ int calltable::add(
 	unsigned long call_id_len,
 	time_t time)
 {
-    int idx=-1,i,found_empty=0;
-    for (i=0;i<(int)table_size;i++){
-	if(table[i].is_used==0){
-	    idx=i;
-	    found_empty=1;
+    int idx = -1;
+    for (int i = 0; i < (int)table.size(); i++) {
+	if (table[i].is_used == 0) {
+	    idx = i;
 	    break;
 	}
     }
-    if (!found_empty){
-	if(table_size>=(calltable_max-1)){
-	    return -1;
-	}
-	idx=table_size;
-	table_size++;
+    if (idx == -1) {
+	idx = table.size();
+	table.push_back(calltable_element());
     }
     table[idx].is_used=1;
     table[idx].had_t38=0;
@@ -98,7 +93,7 @@ int calltable::find_by_call_id(
     }
 #else
     int i;
-    for (i=0;i<(int)table_size;i++){
+    for (i = 0; i < (int)table.size(); i++) {
 	if ((table[i].is_used!=0)&&
 	    (table[i].call_id_len==call_id_len)&&
 	    (memcmp(table[i].call_id,call_id,MIN(call_id_len,32))==0)){
@@ -144,7 +139,7 @@ int calltable::find_ip_port(
 	    unsigned short port)
 {
     int idx,i;
-    for(idx=0;idx<(int)table_size;idx++){
+    for (idx = 0; idx < (int)table.size(); idx++) {
 	for(i=0;i<table[idx].ip_n;i++){
 	    if(table[idx].port[i]==port && table[idx].ip[i]==addr){
 		return idx;
@@ -190,7 +185,7 @@ int calltable::find_ip_port_ssrc(
         break;
     }
 #endif
-    for(i_leg=0;i_leg<(int)table_size;i_leg++){
+    for (i_leg = 0; i_leg < (int)table.size(); i_leg++) {
         for(i_rtp=0;i_rtp<table[i_leg].ip_n;i_rtp++){
             if(table[i_leg].port[i_rtp]==port && table[i_leg].ip[i_rtp]==addr){
                 if(!table[i_leg].had_bye || table[i_leg].ssrc[i_rtp]==ssrc){
@@ -215,7 +210,7 @@ int calltable::find_ip_port_ssrc(
 
 int calltable::do_cleanup( time_t currtime ){
     int idx;
-    for(idx=0;idx<(int)table_size;idx++){
+    for (idx = 0; idx < (int)table.size(); idx++) {
 	if(table[idx].is_used && currtime-table[idx].last_packet_time > 300){
 	    if (table[idx].f_pcap!=NULL){
 		pcap_dump_close(table[idx].f_pcap);
