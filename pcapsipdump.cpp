@@ -445,9 +445,9 @@ int main(int argc, char *argv[])
                     }
                 }else if (htons(header_udp->source)==5060||
                     htons(header_udp->dest)==5060){
-                    char caller[256];
-                    char called[256];
-                    char sip_method[256];
+                    char caller[256] = "";
+                    char called[256] = "";
+                    char sip_method[256] = "";
 
                     //figure out method
                     memcpy(sip_method,data,sizeof(sip_method)-1);
