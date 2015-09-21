@@ -328,6 +328,25 @@ int main(int argc, char *argv[])
         return(2);
     }
 
+    {
+	int dlt=pcap_datalink(handle);
+	switch (dlt){
+	    case DLT_EN10MB :
+		offset_to_ip=sizeof(struct ether_header);
+		break;
+	    case DLT_LINUX_SLL :
+		offset_to_ip=16;
+		break;
+	    case DLT_RAW :
+		offset_to_ip=0;
+		break;
+	    default : {
+		fprintf(stderr, "Unknown interface type (%d).\n", dlt);
+		return 3;
+	    }
+	}
+    }
+
     if (opt_fork){
         // daemonize
 
@@ -345,26 +364,6 @@ int main(int argc, char *argv[])
              }
         }
     }
-
-    {
-	int dlt=pcap_datalink(handle);
-	switch (dlt){
-	    case DLT_EN10MB :
-		offset_to_ip=sizeof(struct ether_header);
-		break;
-	    case DLT_LINUX_SLL :
-		offset_to_ip=16;
-		break;
-	    case DLT_RAW :
-		offset_to_ip=0;
-		break;
-	    default : {
-		printf("Unknown interface type (%d).\n",dlt);
-		return 3;
-	    }
-	}
-    }
-
 
     /* Retrieve the packets */
     while((res = pcap_next_ex( handle, &pkt_header, &pkt_data)) >= 0){
