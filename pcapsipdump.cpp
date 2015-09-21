@@ -285,28 +285,36 @@ int main(int argc, char *argv[])
     }
 
     if (ifname){
-        printf("Capturing on interface: %s\n", ifname);
-
         handle = pcap_create(ifname,errbuf);
-        if ((handle == NULL) ||
-             pcap_set_snaplen(handle,1600) ||
-             pcap_set_promisc(handle,opt_promisc) ||
-             pcap_set_timeout(handle,1000)){
-            fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, pcap_geterr(handle));
+        if (handle == NULL){
+            fprintf(stderr, "Couldn't open interface '%s': pcap_create(): %s\n", ifname, errbuf);
             return(2);
         }
+        if (pcap_set_snaplen(handle, 0)){
+            fprintf(stderr, "Couldn't open interface '%s': pcap_set_snaplen(0): %s\n", ifname, pcap_geterr(handle));
+            return(2);
+        }
+        if (pcap_set_promisc(handle, opt_promisc)){
+            fprintf(stderr, "Couldn't open interface '%s': pcap_set_promisc(opt_promisc): %s\n", ifname, pcap_geterr(handle));
+            return(2);
+        }
+        if (pcap_set_timeout(handle, 1000)){
+            fprintf(stderr, "Couldn't open interface '%s': pcap_set_timeout(1000):) %s\n", ifname, pcap_geterr(handle));
+            return(2);
+        }
+        printf("Capturing on interface: %s\n", ifname);
         if (opt_pcap_buffer_size > 0){
             /* setting pcap_set_buffer_size to bigger values helps to deal with packet drops under high load
                libpcap > 1.0.0 if required for pcap_set_buffer_size
                for libpcap < 1.0.0 instead, this should be controled by /proc/sys/net/core/rmem_default
             */
             if(pcap_set_buffer_size(handle, opt_pcap_buffer_size)){
-                fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, pcap_geterr(handle));
+                fprintf(stderr, "Couldn't open interface '%s': pcap_set_buffer_size(): %s\n", ifname, pcap_geterr(handle));
                 return(2);
             }
         }
         if(pcap_activate(handle)){
-            fprintf(stderr, "Couldn't open interface '%s': %s\n", ifname, pcap_geterr(handle));
+            fprintf(stderr, "Couldn't open interface '%s': pcap_activate(): %s\n", ifname, pcap_geterr(handle));
             return(2);
         }
     }else{
