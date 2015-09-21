@@ -169,10 +169,10 @@ int calltable::find_ip_port_ssrc(
         break;
     }
 #endif
-    for (i_leg = 0; i_leg < (int)table.size(); i_leg++) {
-        for(i_rtp=0;i_rtp<table[i_leg].ip_n;i_rtp++){
-            if(table[i_leg].port[MIN(calltable_max_ip_per_call,i_rtp)] == port &&
-               table[i_leg].ip  [MIN(calltable_max_ip_per_call,i_rtp)] == addr){
+    for (i_leg = 0; i_leg < (int)table.size(); i_leg++){
+        for(i_rtp=0; i_rtp < MIN(calltable_max_ip_per_call, table[i_leg].ip_n); i_rtp++){
+            if(table[i_leg].port[i_rtp] == port &&
+               table[i_leg].ip  [i_rtp] == addr){
                 if(!table[i_leg].had_bye || table[i_leg].ssrc[i_rtp]==ssrc){
 #ifdef USE_CALLTABLE_CACHE
                     cache[ap] = (struct ileg_irtp_ssrc){i_leg, i_rtp, ssrc};
