@@ -133,22 +133,6 @@ int calltable::add_ip_port(
     return 0;
 }
 
-//returns idx or -1 if not found
-int calltable::find_ip_port(
-	    in_addr_t addr,
-	    unsigned short port)
-{
-    int idx,i;
-    for (idx = 0; idx < (int)table.size(); idx++) {
-	for(i=0;i<table[idx].ip_n;i++){
-	    if(table[idx].port[i]==port && table[idx].ip[i]==addr){
-		return idx;
-	    }
-	} 
-    }
-    return -1;
-}
-
 //returns 1 if found or 0 if not found, and updates idx_leg and idx_rtp
 int calltable::find_ip_port_ssrc(
             in_addr_t addr,
