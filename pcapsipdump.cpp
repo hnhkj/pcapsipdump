@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     char *fname;/* pcap file to read on */
     char errbuf[PCAP_ERRBUF_SIZE];/* Error string */
     struct bpf_program fp;/* The compiled filter */
-    char filter_exp[MAX_PCAP_FILTER_EXPRESSION] = "udp";/* The filter expression */
+    char filter_exp[MAX_PCAP_FILTER_EXPRESSION] = "udp or vlan";/* The filter expression */
     struct pcap_pkthdr *pkt_header; /* The header that pcap gives us */
     const u_char *pkt_data; /* The actual packet */
     unsigned long last_cleanup=0;
@@ -396,7 +396,13 @@ int main(int argc, char *argv[])
 		}
 		last_cleanup=pkt_header->ts.tv_sec;
 	    }
-            header_ip=(iphdr *)((char*)pkt_data+offset_to_ip);
+            header_ip = (iphdr *)((char*)pkt_data + offset_to_ip);
+            // 802.1Q VLAN
+            if ((offset_to_ip == 14) &&
+                ntohs(*((uint16_t*)((char*)pkt_data + offset_to_ip - 2))) == 0x8100 &&
+                ntohs(*((uint16_t*)((char*)pkt_data + offset_to_ip + 2))) == 0x0800) {
+                header_ip = (iphdr *)((char*)pkt_data + offset_to_ip + 4);
+            }
             header_ipv6=(ipv6hdr *)header_ip;
             if ( /* sane IPv4 UDP */
                  (header_ip->version == 4 && pkt_header->caplen >=
