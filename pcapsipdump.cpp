@@ -290,8 +290,8 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Couldn't open interface '%s': pcap_create(): %s\n", ifname, errbuf);
             return(2);
         }
-        if (pcap_set_snaplen(handle, 0)){
-            fprintf(stderr, "Couldn't open interface '%s': pcap_set_snaplen(0): %s\n", ifname, pcap_geterr(handle));
+        if (pcap_set_snaplen(handle, 9000)){
+            fprintf(stderr, "Couldn't open interface '%s': pcap_set_snaplen(9000): %s\n", ifname, pcap_geterr(handle));
             return(2);
         }
         if (pcap_set_promisc(handle, opt_promisc)){
@@ -328,11 +328,11 @@ int main(int argc, char *argv[])
 
     /* Compile and apply the filter */
     if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
-        fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        fprintf(stderr, "Couldn't parse filter '%s': %s\n", filter_exp, pcap_geterr(handle));
         return(2);
     }
     if (pcap_setfilter(handle, &fp) == -1) {
-        fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        fprintf(stderr, "Couldn't install filter '%s': %s\n", filter_exp, pcap_geterr(handle));
         return(2);
     }
 
