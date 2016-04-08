@@ -535,30 +535,32 @@ int main(int argc, char *argv[])
 			}
 		    }
 
-                    // idx holds a valid pointer to open leg at this point
-                    if (strcmp(sip_method,"BYE")==0){
-                        ct->table[idx].had_bye=1;
-                    }
-		    s=gettag(data,datalen,"Content-Type:",&l) ? :
- 		      gettag(data,datalen,"c:",&l);
-		    if(idx>=0 && l>0 && strncasecmp(s,"application/sdp",l)==0 && strstr(data,"\r\n\r\n")!=NULL){
-			in_addr_t tmp_addr;
-			unsigned short tmp_port;
-			if (!get_ip_port_from_sdp(strstr(data,"\r\n\r\n")+1,&tmp_addr,&tmp_port)){
-			    ct->add_ip_port(idx,tmp_addr,tmp_port);
-			}else{
-			    if (verbosity>=2){
-				printf("Can't get ip/port from SDP:\n%s\n\n",strstr(data,"\r\n\r\n")+1);
-			    }
-			}
-			if (opt_t38only && memmem(data,datalen,"udptl t38",9)!=NULL){
-			    ct->table[idx].had_t38=1;
-			}
-		    }
+                    if(idx>=0){
+                        // idx holds a valid pointer to open leg at this point
+                        if (strcmp(sip_method,"BYE")==0){
+                            ct->table[idx].had_bye=1;
+                        }
+                        s=gettag(data,datalen,"Content-Type:",&l) ? :
+                          gettag(data,datalen,"c:",&l);
+                        if(l>0 && strncasecmp(s,"application/sdp",l)==0 && strstr(data,"\r\n\r\n")!=NULL){
+                            in_addr_t tmp_addr;
+                            unsigned short tmp_port;
+                            if (!get_ip_port_from_sdp(strstr(data,"\r\n\r\n")+1,&tmp_addr,&tmp_port)){
+                                ct->add_ip_port(idx,tmp_addr,tmp_port);
+                            }else{
+                                if (verbosity>=2){
+                                    printf("Can't get ip/port from SDP:\n%s\n\n",strstr(data,"\r\n\r\n")+1);
+                                }
+                            }
+                            if (opt_t38only && memmem(data,datalen,"udptl t38",9)!=NULL){
+                                ct->table[idx].had_t38=1;
+                            }
+                        }
 
-		    if ((idx>=0) && (ct->table[idx].f_pcap!=NULL)){
-			pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
-			if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
+                        if (ct->table[idx].f_pcap!=NULL){
+                            pcap_dump((u_char *)ct->table[idx].f_pcap,pkt_header,pkt_data);
+                            if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx].f_pcap);}
+                        }
 		    }
 		}else{
 		    if (verbosity>=3){
