@@ -542,7 +542,7 @@ int main(int argc, char *argv[])
                         }
                         s=gettag(data,datalen,"Content-Type:",&l) ? :
                           gettag(data,datalen,"c:",&l);
-                        if(l>0 && strncasecmp(s,"application/sdp",l)==0 && strstr(data,"\r\n\r\n")!=NULL){
+                        if(l>0 && s && strncasecmp(s,"application/sdp",l)==0 && strstr(data,"\r\n\r\n")!=NULL){
                             in_addr_t tmp_addr;
                             unsigned short tmp_port;
                             if (!get_ip_port_from_sdp(strstr(data,"\r\n\r\n")+1,&tmp_addr,&tmp_port)){
