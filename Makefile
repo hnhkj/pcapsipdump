@@ -49,3 +49,8 @@ install-redhat:
 install-debian:
 	install debian/pcapsipdump.init ${DESTDIR}/etc/init.d/pcapsipdump
 	install debian/pcapsipdump.default ${DESTDIR}/etc/default/pcapsipdump
+
+.PHONY: tests
+
+tests:
+	make -C tests
