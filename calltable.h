@@ -35,6 +35,7 @@ struct calltable_element {
 	unsigned char is_used;
 	unsigned char had_bye;
 	unsigned char had_t38;
+        unsigned char rtpmap_event;
 	char call_id[32];
 	unsigned long call_id_len ;
 	in_addr_t ip[calltable_max_ip_per_call];

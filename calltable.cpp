@@ -62,6 +62,7 @@ int calltable::add(
 	table.push_back(calltable_element());
     }
     table[idx].is_used=1;
+    table[idx].rtpmap_event = 101;
     table[idx].had_t38=0;
     table[idx].had_bye=0;
     memcpy(table[idx].call_id,call_id,MIN(call_id_len,32));
