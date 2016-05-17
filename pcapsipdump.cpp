@@ -423,15 +423,12 @@ int main(int argc, char *argv[])
                 data=(char *)header_udp+sizeof(*header_udp);
                 datalen=pkt_header->len-((unsigned long)data-(unsigned long)pkt_data);
 
-                if (opt_rtpsave==RTPSAVE_RTP){
+                if (opt_rtpsave == RTPSAVE_RTP || opt_rtpsave == RTPSAVE_RTPEVENT){
                     save_this_rtp_packet=1;
                 }else if (opt_rtpsave==RTPSAVE_RTP_RTCP){
                     save_this_rtp_packet=1;
                     rtp_port_mask=0xfffe;
                     is_rtcp=(htons(header_udp->source) & 1) && (htons(header_udp->dest) & 1);
-                }else if (opt_rtpsave==RTPSAVE_RTPEVENT &&
-                           datalen==18 && (data[0]&0xff) == 0x80 && (data[1]&0x7d) == 0x65){
-                    save_this_rtp_packet=1;
                 }else{
                     save_this_rtp_packet=0;
                 }
@@ -441,20 +438,27 @@ int main(int argc, char *argv[])
                             hdaddr(header_ip),htons(header_udp->dest) & rtp_port_mask,
                             get_ssrc(data,is_rtcp),
                             &idx_leg,&idx_rtp)){
-                    if (ct->table[idx_leg].f_pcap!=NULL) {
+                    if (ct->table[idx_leg].f_pcap != NULL &&
+                        (opt_rtpsave != RTPSAVE_RTPEVENT ||
+                         data[1] == ct->table[idx_leg].rtpmap_event)){
                         ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
                         pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
-                        if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx_leg].f_pcap);}
+                        if (opt_packetbuffered) {
+                            pcap_dump_flush(ct->table[idx_leg].f_pcap);
+                        }
                     }
                 }else if (save_this_rtp_packet &&
                         ct->find_ip_port_ssrc(
                             hsaddr(header_ip),htons(header_udp->source) & rtp_port_mask,
                             get_ssrc(data,is_rtcp),
                             &idx_leg,&idx_rtp)){
-                    if (ct->table[idx_leg].f_pcap!=NULL) {
+                    if (ct->table[idx_leg].f_pcap != NULL &&
+                        (opt_rtpsave != RTPSAVE_RTPEVENT || data[1] == ct->table[idx_leg].rtpmap_event)){    
                         ct->table[idx_leg].last_packet_time=pkt_header->ts.tv_sec;
                         pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
-                        if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx_leg].f_pcap);}
+                        if (opt_packetbuffered) {
+                            pcap_dump_flush(ct->table[idx_leg].f_pcap);
+                        }
                     }
                 }else if (htons(header_udp->source)==5060||
                     htons(header_udp->dest)==5060){
