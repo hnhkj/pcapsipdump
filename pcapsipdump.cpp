@@ -48,13 +48,13 @@
 
 #include "calltable.h"
 #include "pcapsipdump.h"
+#include "pcapsipdump_strlib.h"
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
 int get_sip_peername(char *data, int data_len, const char *tag, char *caller, int caller_len);
 int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port);
-char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long *gettaglen);
 uint32_t get_ssrc (void *ip_packet_data, bool is_rtcp);
 long long parse_size_string(char *s);
 #ifndef _GNU_SOURCE
@@ -631,35 +631,6 @@ int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port){
 	return 1;
     }
     return 0;
-}
-
-char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long *gettaglen){
-    unsigned long register r,l,tl;
-    char *rc;
-
-    tl=strlen(tag);
-    r=(unsigned long)memmem(ptr,len,tag,tl);
-    if(r==0){
-        l=0;
-    }else{
-        r+=tl;
-        l=(unsigned long)memmem((void *)r,len-(r-(unsigned long)ptr),"\r\n",2);
-        if (l>0){
-            l-=r;
-        }else{
-            l=0;
-            r=0;
-        }
-    }
-    rc=(char*)r;
-    if (rc){
-        while (rc[0]==' '){
-            rc++;
-            l--;
-        }
-    }
-    *gettaglen=l;
-    return rc;
 }
 
 inline uint32_t get_ssrc (void *udp_packet_data_pointer, bool is_rtcp){

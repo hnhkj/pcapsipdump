@@ -21,14 +21,17 @@ all: make-checks/all pcapsipdump
 
 include make-checks/*.mk
 
-pcapsipdump: pcapsipdump.cpp calltable.cpp calltable.h
+pcapsipdump: pcapsipdump.cpp pcapsipdump_strlib.cpp calltable.cpp calltable.h
 	$(CXX) $(RELEASEFLAGS) $(CXXFLAGS) $(LDFLAGS) $(DEFS) $(BSDSTR_DEFS) \
-	pcapsipdump.cpp calltable.cpp $(LIBS) $(BSDSTR_LIBS) \
+	pcapsipdump.cpp pcapsipdump_strlib.cpp calltable.cpp \
+	$(LIBS) $(BSDSTR_LIBS) \
        	-o pcapsipdump
 
-pcapsipdump-debug: make-checks pcapsipdump.cpp calltable.cpp calltable.h
+pcapsipdump-debug: make-checks pcapsipdump.cpp pcapsipdump_strlib.cpp \
+	calltable.cpp calltable.h
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFS) $(BSDSTR_DEFS) -ggdb \
-	pcapsipdump.cpp calltable.cpp $(LIBS) $(BSDSTR_LIBS) -pg \
+	pcapsipdump.cpp pcapsipdump_strlib.cpp calltable.cpp \
+	$(LIBS) $(BSDSTR_LIBS) -pg \
 	-o pcapsipdump-debug
 
 clean: make-checks/clean
