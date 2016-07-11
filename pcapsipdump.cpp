@@ -37,6 +37,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <regex.h>
+#include <libgen.h>
 
 #ifdef USE_BSD_STRING_H
 #include <bsd/string.h>
@@ -49,6 +50,7 @@
 #include "calltable.h"
 #include "pcapsipdump.h"
 #include "pcapsipdump_strlib.h"
+#include "pcapsipdump_lib.h"
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
@@ -114,11 +116,13 @@ uint32_t hdaddr(void *p) {
     }
 }
 
+
 int main(int argc, char *argv[])
 {
 
     pcap_t *handle;/* Session handle */
-    const char *opt_chdir;/* directory to write dump */
+    // directory/filename template, where .pcap files are written
+    char *opt_fntemplate = (char *)"/var/spool/pcapsipdump/%Y%m%d/%H/%Y%m%d-%H%M%S-%f-%t.pcap";
     char *ifname;/* interface to sniff on */
     char *fname;/* pcap file to read on */
     char errbuf[PCAP_ERRBUF_SIZE];/* Error string */
@@ -146,7 +150,6 @@ int main(int argc, char *argv[])
 
     ifname=NULL;
     fname=NULL;
-    opt_chdir="/var/spool/pcapsipdump";
     regcomp(&method_filter, "^(INVITE|OPTIONS|REGISTER)$", REG_EXTENDED);
 
     while(1) {
@@ -210,7 +213,7 @@ int main(int argc, char *argv[])
                 fname=optarg;
                 break;
             case 'd':
-                opt_chdir=optarg;
+                opt_fntemplate = optarg;
                 break;
             case 'f':
                 opt_fork=0;
@@ -246,7 +249,10 @@ int main(int argc, char *argv[])
 		"      but you can use partitially written file anytime, it will be consistent.\n"
 		" -i   Specify network interface name (i.e. eth0, em1, ppp0, etc).\n"
 		" -r   Read from .pcap file instead of network interface.\n"
-		" -d   Set directory, where captured files will be stored.\n"
+                " -d   Set directory/filename template, where captured files will be stored.\n"
+                "      Following %%-codes are expanded: %%f (from/caller), %%t (to/callee)\n"
+                "      %%i (call-id), and call date/time (see 'man 3 strftime' for details)\n"
+                "      ex.: -d /var/spool/pcapsipdump/%%Y%%m%%d/%%H/%%Y%%m%%d-%%H%%M%%S-%%f-%%t.pcap\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
 		" -B   Set the operating system capture buffer size, a.k.a. ring buffer size.\n"
 		"      This can be expressed in bytes/KB(*1000)/KiB(*1024)/MB/MiB/GB/GiB. ex.: '-B 64MiB'\n"
@@ -262,17 +268,7 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
-    if (chdir(opt_chdir)){
-        if (mkdir(opt_chdir,0777)){
-            perror (opt_chdir);
-            return(2);
-        }
-        if (chdir(opt_chdir)){
-            perror (opt_chdir);
-            return(2);
-        }
-    }
-
+    if ((res = opts_sanity_check_d(&opt_fntemplate)) != 0) return res;
     ct = new calltable;
     if (opt_t38only){
         ct->erase_non_t38=1;
@@ -381,7 +377,6 @@ int main(int argc, char *argv[])
 	    struct udphdr *header_udp;
 	    char *data;
 	    char *s;
-	    char str1[1024],str2[1024];
 	    unsigned long datalen;
 	    unsigned long l;
 	    int idx=-1;
@@ -464,6 +459,7 @@ int main(int argc, char *argv[])
                     htons(header_udp->dest)==5060){
                     char caller[256] = "";
                     char called[256] = "";
+                    char callid[512] = "";
                     char sip_method[256] = "";
 
                     //figure out method
@@ -487,6 +483,8 @@ int main(int argc, char *argv[])
                     }
 		    s=gettag(data,datalen,"Call-ID:",&l) ? :
 		      gettag(data,datalen,"i:",&l);
+                    memcpy(callid, s, l);
+                    callid[l] = '\0';
                     number_filter_matched=false;
                     if ((number_filter.allocated==0) ||
                         (regexec(&number_filter, caller, 1, pmatch, 0)==0) ||
@@ -504,30 +502,16 @@ int main(int argc, char *argv[])
                                     }
                                     ct->table[idx].f=NULL;
                                     ct->table[idx].f_pcap=NULL;
-                                }else{
-                                    call_skip_cnt=opt_call_skip_n;
-                                    struct tm *t;
-                                    t=localtime(&pkt_header->ts.tv_sec);
-                                    sprintf(str2,"%04d%02d%02d",
-                                    	t->tm_year+1900,t->tm_mon+1,t->tm_mday);
-                                    mkdir(str2,0777);
-                                    sprintf(str2,"%04d%02d%02d/%02d",
-                                    	t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour);
-                                    mkdir(str2,0777);
-                                    sprintf(str2,"%04d%02d%02d/%02d/%04d%02d%02d-%02d%02d%02d-%s-%s",
-                                        t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,
-                                        t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,caller,called);
-                                    memcpy(str1,s,l);
-                                    str1[l]='\0';
-                                    strcat(str2,"-");
-                                    strcat(str2,str1);
-                                    strcat(str2,".raw");
-                                    ct->table[idx].f=NULL;
-                                    str1[l]='\0';
-                                    *strstr(str2,".raw")='\0';
-                                    strcat(str2,".pcap");
-                                    ct->table[idx].f_pcap=pcap_dump_open(handle,str2);
-                                    strlcpy(ct->table[idx].fn_pcap,str2,sizeof(ct->table[idx].fn_pcap));
+                                } else {
+                                    char fn[1024], dn[1024];
+                                    struct tm *t = localtime(&pkt_header->ts.tv_sec);
+                                    call_skip_cnt = opt_call_skip_n;
+                                    expand_dir_template(fn, sizeof(fn), opt_fntemplate, caller, called, callid, t);
+                                    strcpy(dn, fn);
+                                    dirname(dn);
+                                    mkdir_p(dn, 0777);
+                                    ct->table[idx].f_pcap = pcap_dump_open(handle, fn);
+                                    strlcpy(ct->table[idx].fn_pcap, fn, sizeof(ct->table[idx].fn_pcap));
                                 }
 			    }else{
 				if (verbosity>=2){
