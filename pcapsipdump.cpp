@@ -507,9 +507,11 @@ int main(int argc, char *argv[])
                                     struct tm *t = localtime(&pkt_header->ts.tv_sec);
                                     call_skip_cnt = opt_call_skip_n;
                                     expand_dir_template(fn, sizeof(fn), opt_fntemplate, caller, called, callid, t);
-                                    strcpy(dn, fn);
-                                    dirname(dn);
-                                    mkdir_p(dn, 0777);
+                                    if (strchr(fn, '/')) {
+                                        strcpy(dn, fn);
+                                        dirname(dn);
+                                        mkdir_p(dn, 0777);
+                                    }
                                     ct->table[idx].f_pcap = pcap_dump_open(handle, fn);
                                     strlcpy(ct->table[idx].fn_pcap, fn, sizeof(ct->table[idx].fn_pcap));
                                 }

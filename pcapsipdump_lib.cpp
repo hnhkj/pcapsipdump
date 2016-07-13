@@ -99,7 +99,7 @@ int opts_sanity_check_d(char **opt_fntemplate)
         expand_dir_template(s, sizeof(s), orig_opt_fntemplate, "", "", "", tt);
     }else{
         // (try to) create directory hierarchy
-        if (mkdir_p(dirname(s),0777)){
+        if (strchr(s, '/') && mkdir_p(dirname(s), 0777)) {
             fprintf(stderr, "Can't create directory for '-d %s': ", orig_opt_fntemplate);
             perror (s);
             return(2);
