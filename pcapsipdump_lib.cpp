@@ -34,7 +34,8 @@ size_t expand_dir_template(char *s, size_t max, const char *format,
                            const char *from,
                            const char *to,
                            const char *callid,
-                           const struct tm *tm) {
+                           const time_t t) {
+    struct tm *tm = localtime(&t);
     size_t fl = strlen(format);
     size_t s1l = fl + 256;
     char *s1 = (char *)malloc(s1l);
@@ -75,12 +76,10 @@ int opts_sanity_check_d(char **opt_fntemplate)
 {
     char s[2048];
     char *orig_opt_fntemplate = *opt_fntemplate;
-    const time_t t = 0;
-    struct tm *tt = localtime(&t);
     struct stat sb;
     FILE *f;
 
-    expand_dir_template(s, sizeof(s), *opt_fntemplate, "", "", "", tt);
+    expand_dir_template(s, sizeof(s), *opt_fntemplate, "", "", "", 0);
     if (stat(s, &sb) == 0 && S_ISDIR(sb.st_mode)) {
         // Looks like user has specified bare directory in '-d' option.
         // First, make sure we can create files in that directory
@@ -96,7 +95,7 @@ int opts_sanity_check_d(char **opt_fntemplate)
         *opt_fntemplate = (char *)malloc(strlen(s) + 128);
         strcpy(*opt_fntemplate, orig_opt_fntemplate);
         strcat(*opt_fntemplate, "/%Y%m%d/%H/%Y%m%d-%H%M%S-%f-%t.pcap");
-        expand_dir_template(s, sizeof(s), orig_opt_fntemplate, "", "", "", tt);
+        expand_dir_template(s, sizeof(s), orig_opt_fntemplate, "", "", "", 0);
     }else{
         // (try to) create directory hierarchy
         if (strchr(s, '/') && mkdir_p(dirname(s), 0777)) {

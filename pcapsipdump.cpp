@@ -36,6 +36,7 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <regex.h>
 #include <libgen.h>
 
@@ -48,6 +49,7 @@
 #include <pcap.h>
 
 #include "calltable.h"
+#include "trigger.h"
 #include "pcapsipdump.h"
 #include "pcapsipdump_strlib.h"
 #include "pcapsipdump_lib.h"
@@ -151,11 +153,12 @@ int main(int argc, char *argv[])
     ifname=NULL;
     fname=NULL;
     regcomp(&method_filter, "^(INVITE|OPTIONS|REGISTER)$", REG_EXTENDED);
+    trigger.init();
 
     while(1) {
         char c;
 
-        c = getopt (argc, argv, "i:r:d:v:m:n:R:l:B:fpUt");
+        c = getopt (argc, argv, "i:r:d:v:m:n:R:l:B:t:fpU");
         if (c == -1)
             break;
 
@@ -164,7 +167,8 @@ int main(int argc, char *argv[])
                 ifname=optarg;
                 break;
             case 'v':
-                verbosity=atoi(optarg);
+                verbosity = atoi(optarg);
+                trigger.verbosity = verbosity;
                 break;
             case 'm':
                 regfree(&method_filter);
@@ -206,9 +210,6 @@ int main(int argc, char *argv[])
                     return(1);
                 }
                 break;
-            case 't':
-                opt_t38only=1;
-                break;
             case 'r':
                 fname=optarg;
                 break;
@@ -223,6 +224,9 @@ int main(int argc, char *argv[])
                 break;
             case 'U':
                 opt_packetbuffered=1;
+                break;
+             case 't':
+                trigger.add(optarg);
                 break;
         }
     }
@@ -242,17 +246,13 @@ int main(int argc, char *argv[])
 	printf( "pcapsipdump version %s\n"
 		"Usage: pcapsipdump [-fpUt] [-i <interface> | -r <file>] [-d <working directory>]\n"
                 "                   [-v level] [-R filter] [-m filter] [-n filter] [-l filter]\n"
-                "                   [-B size] [expression]\n"
+                "                   [-B size] [-t trigger:action:param] [expression]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
 		"      but you can use partitially written file anytime, it will be consistent.\n"
 		" -i   Specify network interface name (i.e. eth0, em1, ppp0, etc).\n"
 		" -r   Read from .pcap file instead of network interface.\n"
-                " -d   Set directory/filename template, where captured files will be stored.\n"
-                "      Following %%-codes are expanded: %%f (from/caller), %%t (to/callee)\n"
-                "      %%i (call-id), and call date/time (see 'man 3 strftime' for details)\n"
-                "      ex.: -d /var/spool/pcapsipdump/%%Y%%m%%d/%%H/%%Y%%m%%d-%%H%%M%%S-%%f-%%t.pcap\n"
 		" -v   Set verbosity level (higher is more verbose).\n"
 		" -B   Set the operating system capture buffer size, a.k.a. ring buffer size.\n"
 		"      This can be expressed in bytes/KB(*1000)/KiB(*1024)/MB/MiB/GB/GiB. ex.: '-B 64MiB'\n"
@@ -263,8 +263,18 @@ int main(int argc, char *argv[])
 		" -n   Number-filter. Only calls to/from specified number will be recorded\n"
 		"      Argument is a regular expression. See 'man 7 regex' for details.\n"
                 " -l   Record only each N-th call (i.e. '-l 3' = record only each third call)\n"
-                " For the expression syntax, see 'man 7 pcap-filter'\n"
-		,PCAPSIPDUMP_VERSION);
+                "      For the expression syntax, see 'man 7 pcap-filter'\n"
+                " -d   Set directory/filename template, where captured files will be stored.\n"
+                " -t   <trigger>:<action>:<parameter>. Parameter is %%-expanded (see below)\n"
+                "      Triggers: open = when opening a new .pcap file; close = when closing\n"
+                "      Actions and their parameters:\n"
+                "      mv:<directory> - move .pcap files to <directory> (using /bin/mv)\n"
+                "      exec:\"/bin/blah args...\" - fork and execute /bin/blah with arguments\n"
+                "      sh:\"shell code\" - fork and execute /bin/sh -c \"shell code\"\n"
+                "Following %%-codes are expanded in -d and -t: %%f (from/caller), %%t (to/callee),\n"
+                "%%i (call-id), and call date/time (see 'man 3 strftime' for details)\n"
+                "ex.: -d /var/spool/pcapsipdump/%%Y%%m%%d/%%H/%%Y%%m%%d-%%H%%M%%S-%%f-%%t.pcap\n"
+                , PCAPSIPDUMP_VERSION);
 	return 1;
     }
 
@@ -506,9 +516,10 @@ int main(int argc, char *argv[])
                                     ct->table[idx].f_pcap=NULL;
                                 } else {
                                     char fn[1024], dn[1024];
-                                    struct tm *t = localtime(&pkt_header->ts.tv_sec);
                                     call_skip_cnt = opt_call_skip_n;
-                                    expand_dir_template(fn, sizeof(fn), opt_fntemplate, caller, called, callid, t);
+                                    expand_dir_template(fn, sizeof(fn), opt_fntemplate,
+                                                        caller, called, callid,
+                                                        pkt_header->ts.tv_sec);
                                     if (strchr(fn, '/')) {
                                         strcpy(dn, fn);
                                         dirname(dn);
@@ -578,10 +589,15 @@ int main(int argc, char *argv[])
 	    }
 	}
     }
-    /* flush / close files */
+    // flush / close files
     ct->do_cleanup(INT32_MAX);
-    /* And close the session */
+    // close libpcap session
     pcap_close(handle);
+    // wait for forked processes;
+    {
+        int status;
+        waitpid(-1, &status, 0);
+    }
     return(0);
 }
 

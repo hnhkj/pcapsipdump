@@ -25,6 +25,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include "trigger.h"
 #include "calltable.h"
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
@@ -82,6 +83,12 @@ int calltable::add(
         call_id_cache[s] = idx;
     }
 #endif
+    trigger.trigger(&trigger.open,
+        table[idx].fn_pcap,
+        table[idx].caller,
+        table[idx].callee,
+        table[idx].call_id,
+        table[idx].first_packet_time);
     return idx;
 }
 
@@ -206,6 +213,13 @@ int calltable::do_cleanup( time_t currtime ){
 		pcap_dump_close(table[idx].f_pcap);
                 if (erase_non_t38 && !table[idx].had_t38) {
                     unlink(table[idx].fn_pcap);
+                }else{
+                    trigger.trigger(&trigger.close,
+                        table[idx].fn_pcap,
+                        table[idx].caller,
+                        table[idx].callee,
+                        table[idx].call_id,
+                        table[idx].first_packet_time);
                 }
 	    }
 	    memset((void*)&table[idx],0,sizeof(table[idx]));

@@ -7,4 +7,4 @@ size_t expand_dir_template(char *s, size_t max, const char *format,
                            const char *from,
                            const char *to,
                            const char *callid,
-                           const struct tm *tm);
+                           const time_t t);
