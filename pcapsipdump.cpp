@@ -578,7 +578,7 @@ int main(int argc, char *argv[])
 	}
     }
     /* flush / close files */
-    ct->do_cleanup(1<<31);
+    ct->do_cleanup(INT32_MAX);
     /* And close the session */
     pcap_close(handle);
     return(0);
