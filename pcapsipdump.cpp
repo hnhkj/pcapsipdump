@@ -492,7 +492,10 @@ int main(int argc, char *argv[])
                         number_filter_matched=true;
                     }
 		    if (s!=NULL && ((idx=ct->find_by_call_id(s,l))<0) && number_filter_matched){
-			if ((idx=ct->add(s,l,pkt_header->ts.tv_sec))<0){
+			if ((idx=ct->add(s,l, // callid
+                                         caller,
+                                         called,
+                                         pkt_header->ts.tv_sec))<0){
 			    printf("Too many simultaneous calls. Ran out of call table space!\n");
 			}else{
 			    if (regexec(&method_filter, sip_method, 1, pmatch, 0) == 0){

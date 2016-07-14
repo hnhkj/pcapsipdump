@@ -48,6 +48,8 @@ calltable::calltable()
 int calltable::add(
 	char *call_id,
 	unsigned long call_id_len,
+        char *caller,
+        char *callee,
 	time_t time)
 {
     int idx = -1;
@@ -67,8 +69,11 @@ int calltable::add(
     table[idx].had_bye=0;
     memcpy(table[idx].call_id,call_id,MIN(call_id_len,32));
     table[idx].call_id_len=call_id_len;
+    memcpy(table[idx].caller, caller, sizeof(table[0].caller));
+    memcpy(table[idx].callee, callee, sizeof(table[0].callee));
     table[idx].ip_n=0;
     table[idx].f_pcap=NULL;
+    table[idx].first_packet_time = time;
     table[idx].last_packet_time=time;
     global_last_packet_time=time;
 #ifdef USE_CALLTABLE_CACHE

@@ -36,12 +36,15 @@ struct calltable_element {
 	unsigned char had_bye;
 	unsigned char had_t38;
         unsigned char rtpmap_event;
+	char caller[16];
+	char callee[16];
 	char call_id[32];
 	unsigned long call_id_len ;
 	in_addr_t ip[calltable_max_ip_per_call];
         uint16_t port[calltable_max_ip_per_call];
         uint32_t ssrc[calltable_max_ip_per_call];
 	int ip_n;
+	time_t first_packet_time;
 	time_t last_packet_time;
 	pcap_dumper_t *f_pcap;
 	char fn_pcap[128];
@@ -66,6 +69,8 @@ class calltable
 	int add(
 	    char *call_id,
 	    unsigned long call_id_len,
+            char *caller,
+            char *callee,
 	    time_t time);
 	int find_by_call_id(
 	    char *call_id,
