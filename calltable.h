@@ -44,7 +44,6 @@ struct calltable_element {
 	int ip_n;
 	time_t last_packet_time;
 	pcap_dumper_t *f_pcap;
-	FILE *f;
 	char fn_pcap[128];
 };
 

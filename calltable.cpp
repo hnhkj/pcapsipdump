@@ -68,7 +68,6 @@ int calltable::add(
     memcpy(table[idx].call_id,call_id,MIN(call_id_len,32));
     table[idx].call_id_len=call_id_len;
     table[idx].ip_n=0;
-    table[idx].f=NULL;
     table[idx].f_pcap=NULL;
     table[idx].last_packet_time=time;
     global_last_packet_time=time;
@@ -200,12 +199,9 @@ int calltable::do_cleanup( time_t currtime ){
 	if(table[idx].is_used && currtime-table[idx].last_packet_time > 300){
 	    if (table[idx].f_pcap!=NULL){
 		pcap_dump_close(table[idx].f_pcap);
-	    }
-	    if (table[idx].f!=NULL){
-		fclose(table[idx].f);
-	    }
-	    if (erase_non_t38 && !table[idx].had_t38){
-	        unlink(table[idx].fn_pcap);
+                if (erase_non_t38 && !table[idx].had_t38) {
+                    unlink(table[idx].fn_pcap);
+                }
 	    }
 	    memset((void*)&table[idx],0,sizeof(table[idx]));
 	    table[idx].is_used=0;

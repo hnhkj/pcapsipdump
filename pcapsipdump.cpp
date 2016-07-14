@@ -500,7 +500,6 @@ int main(int argc, char *argv[])
                                     if (verbosity>=3){
                                         printf("Skipping %s call from %s to %s \n",sip_method,caller,called);
                                     }
-                                    ct->table[idx].f=NULL;
                                     ct->table[idx].f_pcap=NULL;
                                 } else {
                                     char fn[1024], dn[1024];
@@ -519,7 +518,6 @@ int main(int argc, char *argv[])
 				if (verbosity>=2){
 				    printf("Unknown SIP method:'%s'!\n",sip_method);
 				}
-				ct->table[idx].f=NULL;
 				ct->table[idx].f_pcap=NULL;
 			    }
 			}
