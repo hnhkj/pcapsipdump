@@ -94,7 +94,7 @@ int opts_sanity_check_d(char **opt_fntemplate)
         // Then append some default filename template to be backwards-compatible
         *opt_fntemplate = (char *)malloc(strlen(s) + 128);
         strcpy(*opt_fntemplate, orig_opt_fntemplate);
-        strcat(*opt_fntemplate, "/%Y%m%d/%H/%Y%m%d-%H%M%S-%f-%t.pcap");
+        strcat(*opt_fntemplate, "/%Y%m%d/%H/%Y%m%d-%H%M%S-%f-%t-%i.pcap");
         expand_dir_template(s, sizeof(s), orig_opt_fntemplate, "", "", "", 0);
     }else{
         // (try to) create directory hierarchy
