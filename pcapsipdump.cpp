@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 
     pcap_t *handle;/* Session handle */
     // directory/filename template, where .pcap files are written
-    char *opt_fntemplate = (char *)"/var/spool/pcapsipdump/%Y%m%d/%H/%Y%m%d-%H%M%S-%f-%t.pcap";
+    char *opt_fntemplate = (char *)"/var/spool/pcapsipdump/%Y%m%d/%H/%Y%m%d-%H%M%S-%f-%t-%i.pcap";
     char *ifname;/* interface to sniff on */
     char *fname;/* pcap file to read on */
     char errbuf[PCAP_ERRBUF_SIZE];/* Error string */
@@ -263,17 +263,17 @@ int main(int argc, char *argv[])
 		" -n   Number-filter. Only calls to/from specified number will be recorded\n"
 		"      Argument is a regular expression. See 'man 7 regex' for details.\n"
                 " -l   Record only each N-th call (i.e. '-l 3' = record only each third call)\n"
-                "      For the expression syntax, see 'man 7 pcap-filter'\n"
-                " -d   Set directory/filename template, where captured files will be stored.\n"
+                " -d   Set directory (or filename template), where captured files will be stored.\n"
+                "      ex.: -d /var/spool/pcapsipdump/%%Y%%m%%d/%%H/%%Y%%m%%d-%%H%%M%%S-%%f-%%t-%%i.pcap\n"
                 " -t   <trigger>:<action>:<parameter>. Parameter is %%-expanded (see below)\n"
                 "      Triggers: open = when opening a new .pcap file; close = when closing\n"
                 "      Actions and their parameters:\n"
                 "      mv:<directory> - move .pcap files to <directory> (using /bin/mv)\n"
                 "      exec:\"/bin/blah args...\" - fork and execute /bin/blah with arguments\n"
                 "      sh:\"shell code\" - fork and execute /bin/sh -c \"shell code\"\n"
-                "Following %%-codes are expanded in -d and -t: %%f (from/caller), %%t (to/callee),\n"
-                "%%i (call-id), and call date/time (see 'man 3 strftime' for details)\n"
-                "ex.: -d /var/spool/pcapsipdump/%%Y%%m%%d/%%H/%%Y%%m%%d-%%H%%M%%S-%%f-%%t.pcap\n"
+                " *    Following %%-codes are expanded in -d and -t: %%f (from/caller), %%t (to/callee),\n"
+                "      %%i (call-id), and call date/time (see 'man 3 strftime' for details)\n"
+                " *    Trailing argument is pcap filter expression syntax, see 'man 7 pcap-filter'\n"
                 , PCAPSIPDUMP_VERSION);
 	return 1;
     }
