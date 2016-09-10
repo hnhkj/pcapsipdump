@@ -91,6 +91,7 @@ class calltable
 	int do_cleanup( time_t currtime );
 	std::vector <calltable_element> table;
 	bool erase_non_t38;
+        int opt_absolute_timeout;
     private:
 	time_t global_last_packet_time;
 #ifdef USE_CALLTABLE_CACHE

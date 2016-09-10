@@ -145,6 +145,7 @@ int main(int argc, char *argv[])
     int opt_call_skip_n=1; /* By default, record every first call, i.e. record all */
     int call_skip_cnt=1;
     int opt_pcap_buffer_size=0; /* Operating system capture buffer size, a.k.a. libpcap ring buffer size */
+    int opt_absolute_timeout = INT32_MAX;
     bool number_filter_matched=false;
     regex_t number_filter, method_filter;
     regmatch_t pmatch[1];
@@ -159,7 +160,7 @@ int main(int argc, char *argv[])
     while(1) {
         char c;
 
-        c = getopt (argc, argv, "i:r:d:v:m:n:R:l:B:t:fpU");
+        c = getopt (argc, argv, "i:r:d:v:m:n:R:l:B:T:t:fpU");
         if (c == -1)
             break;
 
@@ -226,7 +227,10 @@ int main(int argc, char *argv[])
             case 'U':
                 opt_packetbuffered=1;
                 break;
-             case 't':
+            case 'T':
+                opt_absolute_timeout = atol(optarg);
+                break;
+            case 't':
                 trigger.add(optarg);
                 break;
         }
@@ -247,7 +251,7 @@ int main(int argc, char *argv[])
 	printf( "pcapsipdump version %s\n"
 		"Usage: pcapsipdump [-fpUt] [-i <interface> | -r <file>] [-d <working directory>]\n"
                 "                   [-v level] [-R filter] [-m filter] [-n filter] [-l filter]\n"
-                "                   [-B size] [-t trigger:action:param] [expression]\n"
+                "                   [-B size] [-T limit] [-t trigger:action:param] [expression]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
 		" -U   Make .pcap files writing 'packet-buffered' - slower method,\n"
@@ -266,6 +270,8 @@ int main(int argc, char *argv[])
                 " -l   Record only each N-th call (i.e. '-l 3' = record only each third call)\n"
                 " -d   Set directory (or filename template), where captured files will be stored.\n"
                 "      ex.: -d /var/spool/pcapsipdump/%%Y%%m%%d/%%H/%%Y%%m%%d-%%H%%M%%S-%%f-%%t-%%i.pcap\n"
+                " -T   Unconditionally stop recording a call after it was active for this many seconds.\n"
+                "      Might be useful for broken peers that keep sending RTP long after call ended.\n"
                 " -t   <trigger>:<action>:<parameter>. Parameter is %%-expanded (see below)\n"
                 "      Triggers: open = when opening a new .pcap file; close = when closing\n"
                 "      Actions and their parameters:\n"
@@ -281,6 +287,7 @@ int main(int argc, char *argv[])
 
     if ((res = opts_sanity_check_d(&opt_fntemplate)) != 0) return res;
     ct = new calltable;
+    ct->opt_absolute_timeout = opt_absolute_timeout;
     if (opt_t38only){
         ct->erase_non_t38=1;
     }
