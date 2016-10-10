@@ -20,6 +20,8 @@
     Project's home: http://pcapsipdump.sf.net/
 */
 
+#define INT32_MAX                (2147483647)
+
 #include <vector>
 #ifdef USE_CALLTABLE_CACHE
 #include <string>

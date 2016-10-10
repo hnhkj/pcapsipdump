@@ -20,9 +20,6 @@
     Project's home: http://pcapsipdump.sf.net/
 */
 
-//TODO: find a cleaner portable way to define INT32_MAX
-#define __STDC_LIMIT_MACROS
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

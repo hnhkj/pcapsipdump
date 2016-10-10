@@ -27,9 +27,7 @@
 
 #define PCAPSIPDUMP_VERSION "0.2-trunk"
 
-#ifndef INT32_MAX
 #define INT32_MAX                (2147483647)
-#endif
 
 #if !defined(PCAP_NETMASK_UNKNOWN)
 /*
