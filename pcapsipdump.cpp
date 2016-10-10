@@ -393,7 +393,7 @@ int main(int argc, char *argv[])
 	    struct ipv6hdr *header_ipv6;
 	    struct udphdr *header_udp;
 	    char *data;
-	    char *s;
+	    const char *s;
 	    unsigned long datalen;
 	    unsigned long l;
 	    int idx=-1;
@@ -610,7 +610,7 @@ int main(int argc, char *argv[])
 
 int get_sip_peername(char *data, int data_len, const char *tag, char *peername, int peername_len){
     unsigned long r,r2,peername_tag_len;
-    char *peername_tag=gettag(data,data_len,tag,&peername_tag_len);
+    const char *peername_tag = gettag(data,data_len,tag,&peername_tag_len);
     if ((r=(unsigned long)memmem(peername_tag,peername_tag_len,"sip:",4))==0){
 	goto fail_exit;
     }
@@ -631,7 +631,7 @@ fail_exit:
 
 int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port){
     unsigned long l;
-    char *s;
+    const char *s;
     char s1[20];
     s=gettag(sdp_text,strlen(sdp_text),"c=IN IP4 ",&l);
     memset(s1,'\0',sizeof(s1));

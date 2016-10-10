@@ -48,10 +48,10 @@ calltable::calltable()
 }
 
 int calltable::add(
-	char *call_id,
+	const char *call_id,
 	unsigned long call_id_len,
-        char *caller,
-        char *callee,
+        const char *caller,
+        const char *callee,
 	time_t time)
 {
     int idx = -1;
@@ -94,7 +94,7 @@ int calltable::add(
 }
 
 int calltable::find_by_call_id(
-	char *call_id,
+	const char *call_id,
 	unsigned long call_id_len)
 {
 #ifdef USE_CALLTABLE_CACHE

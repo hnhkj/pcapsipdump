@@ -1,7 +1,6 @@
-#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include "pcapsipdump_strlib.h"
 
 const char * gettag(const char *ptr, unsigned long len, const char *tag, unsigned long *gettaglen){
     unsigned long l, tl;

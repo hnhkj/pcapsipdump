@@ -69,13 +69,13 @@ class calltable
     public:
 	calltable();
 	int add(
-	    char *call_id,
+	    const char *call_id,
 	    unsigned long call_id_len,
-            char *caller,
-            char *callee,
+            const char *caller,
+            const char *callee,
 	    time_t time);
 	int find_by_call_id(
-	    char *call_id,
+	    const char *call_id,
 	    unsigned long call_id_len);
 	int add_ip_port(
 	    int call_idx,
