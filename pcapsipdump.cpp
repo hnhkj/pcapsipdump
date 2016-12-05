@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
     trigger.init();
 
     while(1) {
-        char c;
+        unsigned char c;
 
         c = getopt (argc, argv, "i:r:d:v:m:n:R:l:B:T:t:fpU");
         if (c == -1)
